@@ -1,10 +1,18 @@
-# 🔐 Comptes de Test & Rôles
+## 🚀 Quick Start : Identifiants
 
-Voici la liste des comptes pré-configurés pour tester les différents niveaux de permission de l'application **CityManager**.
+```bash
+# 👑 SUPERUSER (Maire)
+User: maire
+Pass: maire
 
-| Rôle | Identifiant | Mot de Passe | Niveau d'Accès |
-| :--- | :--- | :--- | :--- |
-| **👑 Maire** | `maire` | `maire` | **Superuser / Admin Total.** Construction, Destruction, Justice, Finances, Gestion Staff. |
-| **🛡️ Adjoint** | `CIT01` | `cit01` | **Administration Ville.** Maintenance, Voirie, News, Inspection globale + Droits Directeur. |
-| **👔 Directeur** | `direct` | `direct` | **Gestion Locale.** Recrutement, Licenciement, Notes de service, Production (sur son bâtiment). |
-| **👤 Citoyen** | `lambda` | `lambda` | **Utilisateur Standard.** Recherche d'emploi, Logement, Achats, Vote, Plaintes. |
+# 🛡️ STAFF VILLE (Adjoint)
+User: CIT01
+Pass: cit01
+
+# 👔 GESTIONNAIRE (Directeur)
+User: direct
+Pass: direct
+
+# 👤 UTILISATEUR (Citoyen)
+User: lambda
+Pass: lambda
