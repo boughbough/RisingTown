@@ -1,0 +1,84 @@
+{% load humanize %}
+
+<div class="row g-4 justify-content-center">
+    
+    <div class="col-lg-12">
+        
+        {% if is_manager %}
+            <div class="card shadow-lg border-0 mb-4 border-top border-4 border-info">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-chalkboard-teacher me-2 text-info"></i> Administration Scolaire</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h6 class="fw-bold">Organiser une Kermesse</h6>
+                            <p class="text-muted small mb-0">Organiser une fête augmente le bonheur de <strong>tous</strong> les citoyens de la ville.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border">Coût : 500 €</span>
+                    </div>
+
+                    <form action="{% url 'action_ecole' batiment.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="kermesse">
+                        <button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm"
+                                data-confirm="Dépenser 500 € du budget pour organiser une kermesse ?"
+                                data-title="Événement Public"
+                                data-type="primary">
+                            <i class="fas fa-icons me-2"></i> Lancer les festivités
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-book-reader me-2 text-success"></i> Formation Continue</h5>
+                <p class="text-muted small">Améliorez vos compétences.</p>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="row g-3">
+                    <div class="col-md-6 mx-auto">
+                        <div class="p-3 border rounded-3 bg-light text-center">
+                            <div class="mb-2">
+                                <i class="fas fa-laptop-code fa-3x text-success opacity-75"></i>
+                            </div>
+                            <h6 class="fw-bold">Cours du soir</h6>
+                            <p class="small text-muted mb-3">Informatique, Langues, Cuisine...</p>
+                            <div class="badge bg-success bg-opacity-10 text-success mb-3">20 € / session</div>
+                            
+                            <form action="{% url 'action_ecole' batiment.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="cours">
+                                
+                                {% if request.user.profil_citoyen.argent >= 20 %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success w-100 fw-bold"
+                                            data-confirm="Payer 20 € pour suivre ce cours ?"
+                                            data-title="Inscription"
+                                            data-type="success">
+                                        S'inscrire
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-light border w-100 text-muted" disabled>
+                                        Trop cher
+                                    </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border-0 shadow-sm mt-4 d-flex align-items-center">
+                    <i class="fas fa-info-circle fs-4 me-3 text-info"></i>
+                    <div class="small text-muted">
+                        L'école est ouverte à tous. Les frais d'inscription participent au budget de la ville.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

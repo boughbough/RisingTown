@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion de la Population{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} City<span class="fw-light">Manager</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-none d-md-block text-end">
+                    <div class="small fw-bold text-dark">{{ user.username }}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Maire</div>
+                </div>
+                
+                {% include 'fragments/theme_btn.html' %}
+
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-4 pb-5 mt-5">
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 mb-4">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill mb-2">
+                Population Totale : {{ citoyens.count }}
+            </span>
+            <h1 class="fw-bold display-6 mb-0">Registre des Citoyens</h1>
+            <p class="text-muted mb-0">Gérez les droits, les emplois et le statut de vos habitants.</p>
+        </div>
+        <div>
+            <a href="{% url 'ajouter_citoyen' %}" class="btn-soft btn-pay text-decoration-none">
+                <i class="fas fa-user-plus"></i> Inscrire un habitant
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-lg overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase text-muted small fw-bold">Identité</th>
+                            <th class="py-3 text-uppercase text-muted small fw-bold">Statut & Rôle</th>
+                            <th class="py-3 text-uppercase text-muted small fw-bold">Situation</th>
+                            <th class="py-3 text-uppercase text-muted small fw-bold">Bonheur</th>
+                            <th class="pe-4 py-3 text-end text-uppercase text-muted small fw-bold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in citoyens %}
+                        <tr class="position-relative">
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold me-3" style="width: 40px; height: 40px; font-size: 1.1rem;">
+                                        {{ c.prenom|first }}{{ c.nom|first }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ c.prenom }} {{ c.nom }}</div>
+                                        <div class="small text-muted">
+                                            {% if c.compte %}
+                                                <i class="fas fa-user-check text-success me-1"></i> @{{ c.compte.username }}
+                                            {% else %}
+                                                <i class="fas fa-robot text-secondary me-1"></i> PNJ (IA)
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1 align-items-start">
+                                    {% if c.compte.is_adjoint %}
+                                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 rounded-pill">
+                                            <i class="fas fa-star me-1"></i> Adjoint
+                                        </span>
+                                    {% elif c.compte.is_directeur %}
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill">
+                                            <i class="fas fa-user-tie me-1"></i> Directeur
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill">
+                                            Citoyen
+                                        </span>
+                                    {% endif %}
+                                    <span class="small text-muted">{{ c.age }} ans</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small mb-1">
+                                    {% if c.lieu_travail %}
+                                        <i class="fas fa-briefcase text-primary me-1" title="Emploi"></i> {{ c.lieu_travail.nom }}
+                                    {% else %}
+                                        <span class="text-danger"><i class="fas fa-couch me-1"></i> Chômeur</span>
+                                    {% endif %}
+                                </div>
+                                <div class="small">
+                                    {% if c.lieu_vie %}
+                                        <i class="fas fa-home text-success me-1" title="Logement"></i> {{ c.lieu_vie.nom }}
+                                    {% else %}
+                                        <span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i> SDF</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px; width: 80px;">
+                                        <div class="progress-bar {% if c.bonheur > 70 %}bg-success{% elif c.bonheur > 30 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ c.bonheur }}%">
+                                        </div>
+                                    </div>
+                                    <span class="small fw-bold {% if c.bonheur > 70 %}text-success{% elif c.bonheur > 30 %}text-warning{% else %}text-danger{% endif %}">
+                                        {{ c.bonheur }}%
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="btn-group">
+                                    <a href="{% url 'voir_casier' c.id %}" 
+                                    class="btn btn-sm btn-light border text-dark" 
+                                    title="Voir le Casier Judiciaire">
+                                        <i class="fas fa-folder-open"></i>
+                                    </a>
+                                    {% if c.compte %}
+                                        <a href="{% url 'promouvoir_adjoint' c.id %}" 
+                                           class="btn btn-sm btn-light border" 
+                                           title="{% if c.compte.is_adjoint %}Rétrograder{% else %}Promouvoir Adjoint{% endif %}">
+                                            <i class="fas fa-star {% if c.compte.is_adjoint %}text-warning{% else %}text-muted opacity-50{% endif %}"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <a href="{% url 'modifier_citoyen_admin' c.id %}" class="btn btn-sm btn-light border text-primary" title="Modifier">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    
+                                    <a href="{% url 'supprimer_citoyen_admin' c.id %}" 
+                                       class="btn btn-sm btn-light border text-danger" 
+                                       title="Bannir"
+                                       onclick="return confirm('Êtes-vous sûr de vouloir bannir {{ c.prenom }} définitivement ?');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted opacity-50">
+                                    <i class="fas fa-wind fs-1 mb-3"></i><br>
+                                    La ville est déserte... pour l'instant.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light border-top p-3 text-center">
+            <small class="text-muted">Astuce : Les citoyens sans compte utilisateur sont gérés par l'IA.</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

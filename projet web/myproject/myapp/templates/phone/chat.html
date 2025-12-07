@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body, html { height: 100%; margin: 0; background-color: #e5ddd5; }
+        .app-container { display: flex; flex-direction: column; height: 100%; }
+
+        /* Header */
+        .phone-header { 
+            background: #f8f9fa; padding: 10px 15px; border-bottom: 1px solid #ddd; 
+            display: flex; align-items: center; flex: 0 0 auto; z-index: 10;
+        }
+
+        /* Corps des messages */
+        .phone-body { 
+            flex: 1 1 auto; overflow-y: auto; padding: 15px; display: flex; flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .message { 
+            max-width: 80%; padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; 
+            font-size: 0.9rem; word-wrap: break-word; position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .message-sent { align-self: flex-end; background-color: #dcf8c6; border-bottom-right-radius: 0; }
+        .message-received { align-self: flex-start; background-color: #fff; border-bottom-left-radius: 0; }
+        
+        .msg-time { font-size: 0.65rem; color: #999; text-align: right; margin-top: 2px; }
+
+        /* Footer Input */
+        .phone-footer { 
+            padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; flex: 0 0 auto; 
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-header">
+            <a href="{% url 'phone_index' %}" class="text-primary me-3 text-decoration-none">
+                <i class="fas fa-chevron-left"></i> Retour
+            </a>
+            <div style="width: 35px; height: 35px; background: #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold; color: white;">
+                {{ autre.prenom|slice:":1" }}
+            </div>
+            <strong>{{ autre.prenom }}</strong>
+        </div>
+        
+        <div class="phone-body" id="chatBox">
+            <div class="text-center mt-5 text-muted small loading-msg">Chargement...</div>
+        </div>
+
+        <div class="phone-footer">
+            <form id="chatForm" class="d-flex gap-2" onsubmit="envoyerMessage(event)">
+                <input type="text" id="msgInput" class="form-control rounded-pill" placeholder="Message..." autocomplete="off">
+                <button type="submit" class="btn btn-primary rounded-circle" style="width: 40px; height: 40px; padding: 0;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chatBox");
+        const msgInput = document.getElementById("msgInput");
+        const form = document.getElementById("chatForm");
+        
+        let isUserScrolling = false; // Pour savoir si l'utilisateur lit l'historique
+
+        // Détecter si l'utilisateur scrolle vers le haut pour ne pas le déranger
+        chatBox.addEventListener('scroll', () => {
+            // Si on n'est pas tout en bas (marge de 50px), on considère que l'user scrolle
+            if (chatBox.scrollTop + chatBox.clientHeight < chatBox.scrollHeight - 50) {
+                isUserScrolling = true;
+            } else {
+                isUserScrolling = false;
+            }
+        });
+
+        function scrollToBottom() {
+            // On ne scrolle que si l'utilisateur n'est pas en train de lire l'historique
+            if (!isUserScrolling) {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        // 1. ACTUALISER (GET)
+        function actualiserChat() {
+            fetch("{% url 'api_get_messages' autre.id %}")
+            .then(response => response.json())
+            .then(data => {
+                // On compare la longueur pour éviter de tout redessiner pour rien (optionnel mais mieux)
+                // Ici on garde la méthode simple : on remplace tout pour être sûr d'avoir les dates à jour
+                
+                const htmlContent = data.messages.map(msg => `
+                    <div class="message ${msg.is_me ? 'message-sent' : 'message-received'}">
+                        ${msg.contenu}
+                        <div class="msg-time">${msg.date}</div>
+                    </div>
+                `).join('');
+
+                // Si le contenu a changé, on met à jour
+                if (chatBox.innerHTML !== htmlContent) {
+                    chatBox.innerHTML = htmlContent;
+                    scrollToBottom();
+                }
+            })
+            .catch(err => console.error("Erreur polling:", err));
+        }
+
+        // 2. ENVOYER (POST)
+        function envoyerMessage(e) {
+            e.preventDefault();
+            const texte = msgInput.value.trim();
+            if (!texte) return;
+
+            // Petit effet visuel : on vide tout de suite pour la réactivité
+            msgInput.value = ""; 
+            isUserScrolling = false; // On force le scroll en bas quand on écrit
+
+            fetch("{% url 'api_send_message' autre.id %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ contenu: texte })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'ok') {
+                    actualiserChat(); // On récupère le message avec la bonne date serveur
+                }
+            });
+        }
+        
+        // Attacher l'événement submit
+        form.addEventListener('submit', envoyerMessage);
+
+        // BONUS : Lancer au démarrage + Intervalle
+        actualiserChat();
+        setInterval(actualiserChat, 2000);
+
+        // Force le scroll tout en bas au premier chargement
+        setTimeout(() => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 100);
+
+    </script>
+</body>
+</html>

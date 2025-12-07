@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Smart City</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> 
+    
+    <script>
+        const savedTheme = localStorage.getItem('site_theme');
+        if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    
+</head>
+<body>
+    <div id="page-loader">
+    <div class="loader-content">
+        <img src="{% static 'img/logo.png' %}" alt="Chargement..." class="loader-logo">
+        <p class="loader-text">Chargement...</p>
+    </div>
+</div>
+
+    <div class="position-absolute top-0 end-0 m-4" style="z-index: 100;">
+        <button class="btn rounded-circle shadow-lg" id="theme-toggle" style="width: 50px; height: 50px;">
+            <i class="fas fa-moon" id="theme-icon" style="font-size: 1.2rem;"></i>
+        </button>
+    </div>
+
+    <div class="hero-section">
+        
+        <div class="ambient-shape shape-1"></div>
+        <div class="ambient-shape shape-2"></div>
+        
+        <div class="glass-card text-start" style="max-width: 450px; padding: 0;">
+            
+            <div class="text-center mb-5">
+                <div class="mb-3 d-inline-block animate-float">
+                    <span style="font-size: 3.5rem; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));">🔐</span>
+                </div>
+                <h1 class="display-5 fw-bold mb-2" style="color: var(--hero-text-title);">Connexion</h1>
+                <p style="color: var(--hero-text-subtitle); font-size: 1.1rem;">Heureux de vous revoir.</p>
+            </div>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+
+                <div class="form-floating mb-3">
+                    <input type="text" name="username" class="form-control glass-input" id="floatingInput" placeholder="Identifiant" required>
+                    <label for="floatingInput">Identifiant</label>
+                </div>
+                
+                <div class="form-floating mb-4">
+                    <input type="password" name="password" class="form-control glass-input" id="floatingPassword" placeholder="Mot de passe" required>
+                    <label for="floatingPassword">Mot de passe</label>
+                </div>
+
+                <button class="btn btn-hero-white w-100 py-3 rounded-pill fw-bold shadow-lg" type="submit" style="font-size: 1.1rem;">
+                    Se connecter
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <p class="small mb-0" style="color: var(--hero-text-subtitle);">
+                        Pas encore de compte ? <br> 
+                        <a href="{% url 'signup' %}" style="color: var(--hero-text-title); text-decoration: none; font-weight: 700;">Créer un dossier Citoyen</a>
+                    </p>
+                    <div class="mt-4">
+                        <a href="{% url 'landing' %}" class="small text-decoration-none opacity-75 hover-opacity-100" style="color: var(--hero-text-subtitle);">
+                            <i class="fas fa-arrow-left me-1"></i> Retour à l'accueil
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="position-absolute bottom-0 w-100 text-center pb-4" style="z-index: 20;">
+            <small class="opacity-50" style="color: var(--hero-text-subtitle); letter-spacing: 1px;">
+                &copy; 2025 PROJET MIAGE
+            </small>
+        </div>
+    </div>
+
+    
+
+    <script>
+        const themeBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const html = document.documentElement;
+
+        function updateIcon(theme) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        if(html.getAttribute('data-theme') === 'dark') updateIcon('dark');
+        else updateIcon('light');
+
+        themeBtn.addEventListener('click', function() {
+            const newTheme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('site_theme', newTheme);
+            updateIcon(newTheme);
+        });
+        // --- SCRIPT DE TRANSITION CORRIGÉ ---
+        const form = document.querySelector('form');
+        const loader = document.getElementById('page-loader');
+        const btn = document.querySelector('button[type="submit"]');
+
+        if(form && loader && btn) {
+            form.addEventListener('submit', function(e) {
+                // 1. On empêche l'envoi immédiat pour laisser le temps à l'anim de se lancer
+                e.preventDefault();
+
+                // 2. On affiche le loader
+                loader.classList.add('active');
+                
+                // 3. Feedback sur le bouton
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Connexion...';
+                btn.classList.add('disabled');
+
+                // 4. Petit délai (800ms) pour voir l'animation, puis envoi réel
+                setTimeout(() => {
+                    form.submit();
+                }, 800);
+            });
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Casier Judiciaire - {{ citoyen.nom }}{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} Services de Police
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                {% include 'fragments/theme_btn.html' %}
+                <button class="btn btn-outline-secondary rounded-pill px-3" onclick="history.back()">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </button>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-4 pb-5 mt-5" style="max-width: 800px;">
+
+    <div class="card shadow-lg border-0 mb-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <div class="col-md-4 bg-dark text-white d-flex flex-column align-items-center justify-content-center p-4">
+                    <div class="rounded-circle bg-white text-dark d-flex align-items-center justify-content-center mb-3 shadow" style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
+                        {{ citoyen.prenom|first }}{{ citoyen.nom|first }}
+                    </div>
+                    <h4 class="mb-0">{{ citoyen.prenom }} {{ citoyen.nom }}</h4>
+                    <span class="badge bg-secondary mt-2">Matricule #{{ citoyen.id }}</span>
+                    
+                    {% if citoyen.est_en_prison %}
+                        <div class="mt-3 text-center w-100">
+                            <div class="badge bg-danger fs-6 w-100 py-2"><i class="fas fa-lock me-2"></i> INCARCÉRÉ</div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-8 p-4">
+                    <h5 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">État Civil & Situation</h5>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <small class="d-block text-muted">Âge</small>
+                            <strong>{{ citoyen.age }} ans</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="d-block text-muted">Emploi</small>
+                            <strong>{{ citoyen.lieu_travail.nom|default:"Chômeur" }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="d-block text-muted">Statut Judiciaire</small>
+                            {% if casiers|length > 0 %}
+                                <span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> {{ casiers|length }} Condamnation(s)</span>
+                            {% else %}
+                                <span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Casier Vierge</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3 ms-1"><i class="fas fa-history me-2 text-primary"></i> Historique Pénal</h5>
+
+    {% if casiers %}
+        <div class="card shadow-lg border-0">
+            <div class="list-group list-group-flush">
+                {% for c in casiers %}
+                    <div class="list-group-item p-4">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-danger me-2">Condamnation</span>
+                                    <h5 class="mb-0 text-dark fw-bold">{{ c.motif }}</h5>
+                                </div>
+                                <p class="mb-2 text-secondary">
+                                    <i class="fas fa-gavel me-2"></i> Peine : <strong>{{ c.sanction }}</strong>
+                                </p>
+                                <small class="text-muted">
+                                    Jugé par <strong>{{ c.uge_par.username|default:"Tribunal" }}</strong>
+                                </small>
+                            </div>
+                            <small class="text-muted border-start ps-3 text-end" style="min-width: 120px;">
+                                {{ c.date_jugement|date:"d M Y" }}<br>
+                                {{ c.date_jugement|date:"H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-success shadow-sm border-0 d-flex align-items-center p-4">
+            <i class="fas fa-shield-alt fs-1 me-4 opacity-50"></i>
+            <div>
+                <h5 class="alert-heading fw-bold mb-1">Citoyen Exemplaire</h5>
+                <p class="mb-0 opacity-75">Aucune infraction n'a été enregistrée à l'encontre de ce citoyen.</p>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

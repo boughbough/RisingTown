@@ -1,0 +1,1970 @@
+/* ========================================= */
+/* 1. CONFIGURATION GLOBALE & VARIABLES      */
+/* ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* ... Tes autres variables ... */
+
+    /* THEME CLAIR (Journée) */
+    --hero-color-1: #bae6fd; 
+    --hero-color-2: #e0e7ff; 
+    --hero-color-3: #ddd6fe; 
+    --hero-color-4: #fbcfe8;
+    
+    --hero-text-title: #1e1b4b; 
+    --hero-text-subtitle: #475569;
+    
+    /* Couleurs Boutons (Light) */
+    --btn-glass-bg: rgba(255, 255, 255, 0.4);
+    --btn-glass-border: rgba(255, 255, 255, 0.8);
+    --btn-glass-text: #1e1b4b;
+    --input-bg: rgba(255, 255, 255, 0.4);      /* Fond un peu plus blanc */
+    --input-border: rgba(255, 255, 255, 0.8);  /* Bordure visible */
+    --input-text: #1e1b4b;                     /* Texte FONCÉ (Indigo sombre) */
+    --input-placeholder: #475569;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ========================================= */
+/* 2. NAVBAR & NAVIGATION                    */
+/* ========================================= */
+/* ========================================= */
+/* 2. NAVBAR & NAVIGATION                    */
+/* ========================================= */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    
+    /* LA CORRECTION EST ICI : */
+    /* On la met à 7000 pour être au-dessus du Soleil (6000) */
+    /* Mais en dessous de la Modale (qui est à 10000) */
+    z-index: 7000 !important; 
+    position: fixed; /* Assure-toi qu'elle est bien fixed */
+    width: 100%;     /* Et qu'elle prend toute la largeur */
+    top: 0;
+}
+
+.navbar-brand {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.5px;
+}
+
+/* ========================================= */
+/* 3. CARTES & CONTENEURS                    */
+/* ========================================= */
+.card {
+    background: var(--bg-surface);
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid #f3f4f6;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Tuiles de Statistiques (Header) */
+.stat-tile {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-tile::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 4px;
+}
+
+.stat-budget::after { background: var(--success); }
+.stat-energy::after { background: var(--warning); }
+.stat-pop::after { background: var(--primary); }
+
+.stat-icon {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1.25rem;
+    flex-shrink: 0;
+}
+
+.stat-budget .stat-icon { background: #d1fae5; color: var(--success); }
+.stat-energy .stat-icon { background: #fef3c7; color: var(--warning); }
+.stat-pop .stat-icon { background: var(--primary-light); color: var(--primary); }
+
+.stat-content h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.stat-content p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* ========================================= */
+/* 4. SYSTÈME DE CARTE ISOMÉTRIQUE (JEU)     */
+/* ========================================= */
+.iso-scene {
+    width: 100%;
+    height: 600px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #5D5950, #E0F7FA);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    cursor: grab;
+    transition: background 3s ease-in-out; /* Pour la météo */
+}
+.iso-scene:active { cursor: grabbing; }
+.iso-scene.locked-mode { cursor: default !important; }
+
+/* Plateau de jeu */
+.iso-map {
+    position: relative;
+    /* La taille est calculée via JS/Variables, on met une base ici */
+    width: calc(var(--cell-size) * var(--map-width));
+    height: calc(var(--cell-size) * var(--map-height));
+    
+    transform: rotateX(60deg) rotateZ(-45deg);
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    
+    /* Sol amélioré */
+    background: content-box radial-gradient(#B0BD49, #B0BD49);
+    box-shadow: 
+        1px 1px 0 #636eb6, 2px 2px 0 #7d8ae0, 3px 3px 0 #808cdc, 
+        4px 4px 0 #636eb6, 5px 5px 0 #7d8ae0, 10px 10px 20px rgba(0,0,0,0.3);
+    
+    /* Marges dynamiques pour centrage initial */
+    margin: calc(var(--cell-size) * 10); 
+    flex-shrink: 0;
+}
+
+.iso-grid {
+    position: absolute; 
+    width: 100%; 
+    height: 100%;
+    background-image: none; /* On supprime le dessin de la grille de fond */
+}
+
+/* Bâtiments */
+.iso-building {
+    position: absolute;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    /* Important: pas de background pour ne pas cacher la grille */
+}
+
+/* Ombre au sol réaliste */
+.iso-building::after {
+    content: ''; position: absolute;
+    width: 60%; height: 60%; left: 20%; top: 20%;
+    background: rgba(0, 0, 0, 0.4);
+    filter: blur(8px); border-radius: 50%;
+    transform: translateZ(1px);
+    z-index: 0; pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+/* Le Sprite (Image 2D projetée en 3D) */
+.building-sprite {
+    position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) translateZ(0px) scale(1.6);
+    width: 120%; height: auto;
+    transform-origin: bottom center;
+    z-index: 10; pointer-events: auto;
+    filter: drop-shadow(0 0 0 rgba(0,0,0,0)); /* Reset */
+    transition: filter 0.2s, transform 0.2s;
+}
+
+/* Effets Hover */
+.iso-building:hover .building-sprite {
+    filter: brightness(1.15) contrast(1.1);
+}
+.iso-building:hover::after { opacity: 0.6;  }
+
+/* Nom du bâtiment */
+/* Nom du bâtiment */
+.bat-name {
+    /* 1. On augmente translateZ de 80px à 150px pour passer au-dessus des toits */
+    transform: rotateZ(45deg) rotateX(-60deg) translateZ(150px);
+    
+    opacity: 0; 
+    transition: opacity 0.3s; 
+    pointer-events: none;
+    background: rgba(17, 24, 39, 0.9);
+    color: white; 
+    padding: 4px 8px; 
+    border-radius: 4px;
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    white-space: nowrap;
+    
+    /* 2. Sécurité supplémentaire : on force l'affichage au premier plan */
+    z-index: 1000; 
+}
+.iso-building:hover .bat-name { opacity: 1; }
+
+/* Fantômes de placement */
+.iso-ghost {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 2px dashed #fff;
+    cursor: pointer; z-index: 50;
+    animation: pulse 1.5s infinite;
+}
+.iso-ghost:hover {
+    background-color: rgba(16, 185, 129, 0.5); /* Vert */
+    border-style: solid;
+}
+@keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
+
+
+/* La grille devient un conteneur simple (on enlève le background gradient) */
+.iso-grid {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Juste au-dessus du sol, en dessous des bâtiments */
+    pointer-events: none; /* Par défaut, on ne clique pas dessus */
+}
+
+/* On active l'interaction UNIQUEMENT si on est en mode déplacement */
+.iso-scene.moving-mode .iso-grid {
+    pointer-events: auto;
+    z-index: 100; /* Passe AU-DESSUS des bâtiments pour éviter les interférences */
+}
+
+/* Les cellules individuelles générées par JS */
+/* 1. LA CELLULE PAR DÉFAUT (INVISIBLE) */
+    .grid-cell {
+        position: absolute;
+        width: var(--cell-size);
+        height: var(--cell-size);
+        transform-origin: 0 0;
+        
+        /* MODIFICATION ICI : On enlève la bordure par défaut */
+        border: 1px solid transparent; 
+        
+        /* On garde le z-index pour que le clic fonctionne */
+        z-index: 10; 
+    }
+
+    /* 2. QUAND ON DÉPLACE UN BÂTIMENT (GRILLE VISIBLE) */
+    /* Le JS ajoute la classe 'moving-mode' à .iso-scene */
+    .iso-scene.moving-mode .grid-cell {
+        /* On remet la bordure blanche discrète */
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background-color: rgba(255, 255, 255, 0.02); /* Optionnel : léger fond */
+        cursor: crosshair; /* Curseur de visée */
+    }
+
+    /* 3. LE SURVOL (HOVER) */
+    /* On garde l'effet de survol uniquement en mode déplacement pour aider à viser */
+    .iso-scene.moving-mode .grid-cell:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+/* Le Fantôme (Ghost) qui suit la souris doit être fluide */
+.iso-ghost {
+    position: absolute;
+    pointer-events: none; /* Le fantôme ne doit pas bloquer la souris */
+    z-index: 150;
+    transition: all 0.1s ease-out; /* Petit lissage du mouvement */
+    background-color: rgba(79, 70, 229, 0.4); /* Bleu Indigo */
+    border: 2px solid #fff;
+    /* On cache le fantôme tant qu'il n'est pas positionné */
+    display: none; 
+}
+
+/* Classe ajoutée par JS quand le fantôme est actif */
+.iso-ghost.active {
+    display: block;
+}
+/* ========================================= */
+/* 5. MÉTÉO & ASTRES                         */
+/* ========================================= */
+.sky-night { background: linear-gradient(to bottom, #0f2711, #203a43, #2c5364) !important; }
+.sky-dawn { background: linear-gradient(to bottom, #ff9a9e, #fecfef, #a1c4fd) !important; }
+.sky-day { background: linear-gradient(to bottom, #76b2e7, #60e9f0) !important; }
+.sky-dusk { background: linear-gradient(to bottom, #d76161, #fee140) !important; }
+
+/* Voile de nuit */
+/* --- VOILE DE NUIT (CORRIGÉ) --- */
+/* --- VOILE DE NUIT (CORRIGÉ V2) --- */
+/* --- LE VOILE DE NUIT (FIXE) --- */
+/* On cible le conteneur parent fixe, plus la scène mouvante */
+#city-viewport::after {
+    content: "";
+    position: absolute; /* Remplira parfaitement le cadre */
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    
+    /* Le style reste le même */
+    background: rgba(2, 6, 23, 0.6); 
+    z-index: 5000; 
+    pointer-events: none; /* Laisse passer les clics */
+    opacity: 0; 
+    transition: opacity 3s ease-in-out;
+}
+
+/* Quand le parent a la classe 'sky-night', on allume le voile */
+#city-viewport.sky-night::after {
+    opacity: 1;
+}
+.sky-night::after { opacity: 1; }
+
+.celestial-body {
+    position: absolute; border-radius: 50%; z-index: 6000;
+    /* On ajoute opacity dans la transition ici : */
+    transition: top 1s linear, left 1s linear, opacity 1s ease-in-out; 
+    pointer-events: none;
+}
+.sun {
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, #ffd700, #f59e0b);
+    box-shadow: 0 0 40px rgba(253, 186, 116, 0.8);
+}
+.moon {
+    width: 50px; height: 50px;
+    background-color: #f1f5f9;
+    box-shadow: inset -8px -8px 0 0 rgba(0,0,0,0.1), 0 0 20px 5px rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================= */
+/* 6. TIMELINE (Journal)                     */
+/* ========================================= */
+.journal-item {
+    padding: 1rem 0 1rem 1.5rem;
+    border-left: 2px solid #e5e7eb;
+    margin-left: 0.5rem;
+    position: relative;
+}
+.journal-item:last-child { border-left: 2px solid transparent; }
+.journal-item::before {
+    content: ''; position: absolute; left: -7px; top: 1.25rem;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--bg-surface);
+    border: 3px solid var(--primary);
+}
+.journal-date {
+    font-size: 0.7rem; color: var(--text-secondary);
+    text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;
+}
+.journal-title {
+    font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;
+}
+
+/* ========================================= */
+/* 7. TÉLÉPHONE                              */
+/* ========================================= */
+#phone-wrapper {
+    position: fixed; bottom: -565px; right: 40px;
+    width: 320px; height: 600px;
+    background-color: #111;
+    border-radius: 40px 40px 0 0;
+    box-shadow: 0 -20px 40px rgba(0,0,0,0.2);
+    transition: bottom 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 9999;
+    border: 12px solid #1f2937; border-bottom: none;
+    display: flex; flex-direction: column;
+}
+#phone-wrapper.open { bottom: 0; }
+.phone-notch {
+    height: 30px; background-color: #1f2937; color: #9ca3af;
+    text-align: center; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 12px; border-radius: 24px 24px 0 0; flex-shrink: 0;
+}
+.phone-notch:hover { color: white; background: #374151; }
+.notification-dot {
+    width: 8px; height: 8px; background-color: var(--danger);
+    border-radius: 50%; position: absolute; top: 10px; right: 20px;
+    animation: blink 2s infinite; display: none;
+}
+.has-notif .notification-dot { display: block; }
+.notification-read .notification-dot { display: none !important; }
+.phone-screen { width: 100%; height: 100%; border: none; background: #fff; }
+
+
+/* ========================================= */
+/* 8. BOUTONS ACTIONS "SOFT & MODERN"        */
+/* ========================================= */
+
+.btn-soft {
+    border: none;
+    padding: 10px 24px;     /* Plus d'espace interne */
+    border-radius: 12px;    /* Coins arrondis modernes (pas totalement ronds) */
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;              /* Espace entre icône et texte */
+    color: white !important; /* Force le texte en blanc */
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    letter-spacing: 0.3px;
+}
+
+/* Animation au survol : on lève le bouton et on intensifie l'ombre */
+.btn-soft:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+}
+
+.btn-soft:active {
+    transform: translateY(-1px);
+}
+
+/* --- Variantes de Couleurs --- */
+
+/* 1. Construire : Indigo Profond */
+.btn-build {
+    background-color: #4f46e5;
+    /* Ombre colorée douce (Glow) */
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+}
+.btn-build:hover {
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+}
+
+/* 2. Salaires : Émeraude Mate (plus classe que le vert lime) */
+.btn-pay {
+    background-color: #059669;
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.35);
+}
+.btn-pay:hover {
+    box-shadow: 0 8px 25px rgba(5, 150, 105, 0.5);
+}
+
+/* 3. Impôts : Ambre / Gold (plus chaud que le jaune warning) */
+/* 3. Impôts : Ambre / Gold (plus chaud que le jaune warning) */
+.btn-tax {
+    background-color: #d97706; /* Orange Ambré */
+    color: white !important;   /* Force le texte blanc */
+    border: none;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn-tax:hover {
+    background-color: #b45309 !important; /* Orange plus foncé et riche */
+    transform: translateY(-3px);          /* Le bouton se lève */
+    box-shadow: 0 8px 25px rgba(217, 119, 6, 0.6); /* L'ombre s'intensifie */
+}
+
+.btn-tax:active {
+    transform: translateY(-1px); /* Effet de clic */
+    background-color: #92400e !important; /* Encore plus foncé au clic */
+}
+
+/* Icônes légèrement transparentes pour le style */
+.btn-soft i {
+    opacity: 0.8;
+    font-size: 1.1em;
+}
+
+/* Boutons de Zoom (Loupes) */
+.zoom-btn {
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+    padding: 0 5px;
+}
+.zoom-btn:hover {
+    transform: scale(1.2); /* Grossit un peu au survol */
+    color: var(--primary); /* Devient indigo */
+}
+.zoom-btn:active {
+    transform: scale(0.9); /* Clic enfoncé */
+}
+
+
+/* ========================================= */
+/* 9. MODALE (POP-UP) "SOFT UI"              */
+/* ========================================= */
+.modal-content {
+    border: none;
+    border-radius: 24px; /* Coins très ronds */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+    padding: 1.5rem;
+}
+
+.modal-title {
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+}
+
+.modal-body {
+    padding: 2rem;
+    /* On utilise la variable de fond, comme ça elle change toute seule ! */
+    background-color: var(--bg-app); 
+}
+
+/* Loader animé (pendant le chargement) */
+.spinner-soft {
+    width: 3rem; height: 3rem;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+
+/* ========================================= */
+/* 10. FIX MODALE (TAILLE & Z-INDEX)         */
+/* ========================================= */
+
+/* 1. On passe au-dessus du voile de nuit (z-index 5000) */
+.modal {
+    z-index: 10000 !important; /* Très haut */
+}
+.modal-backdrop {
+    z-index: 9999 !important; /* Juste en dessous de la fenêtre */
+}
+
+/* 2. On élargit la fenêtre */
+.modal-dialog {
+    max-width: 1140px; /* Largeur confortable (style grand écran) */
+    width: 95%;        /* Sécurité mobile */
+}
+
+/* 3. On nettoie le contenu chargé */
+/* Si tu as un bouton "Retour" dans ta page détail, on le cache ici car inutile */
+.modal-body .btn-secondary, 
+.modal-body a[href*="dashboard"] { 
+    display: none !important; 
+}
+
+/* On enlève les marges parasites du container chargé */
+.modal-body .container {
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+}
+
+
+/* Correction pour le bouton blanc "Soft" */
+.btn-soft.btn-white {
+    background-color: #ffffff;
+    color: #374151 !important; /* Gris foncé force */
+    border: 1px solid #e5e7eb; /* Légère bordure */
+}
+
+.btn-soft.btn-white:hover {
+    background-color: #f9fafb;
+    color: #000000 !important; /* Noir pur au survol */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Ombre douce grise */
+}
+
+
+/* --- THEME SOMBRE (Dark Mode) --- */
+[data-theme="dark"] {
+    /* THEME SOMBRE (Nuit) */
+    --hero-color-1: #0f172a; 
+    --hero-color-2: #1e1b4b; 
+    --hero-color-3: #312e81; 
+    --hero-color-4: #4c1d95;
+    
+    --hero-text-title: #ffffff;
+    --hero-text-subtitle: #cbd5e1;
+    
+    /* Couleurs Boutons (Dark) */
+    --btn-glass-bg: rgba(255, 255, 255, 0.05);
+    --btn-glass-border: rgba(255, 255, 255, 0.2);
+    --btn-glass-text: #ffffff;
+
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-text: #ffffff;                     /* Texte BLANC */
+    --input-placeholder: rgba(255, 255, 255, 0.6);
+}
+
+/* --- APPLICATION DES COULEURS --- */
+body {
+    background-color: var(--bg-app) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* On force les cartes et la navbar à utiliser nos variables */
+.card, .navbar, .modal-content, .bg-white, .list-group-item {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Les éléments gris clair deviennent gris foncé */
+.bg-light {
+    background-color: var(--bg-app) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Corrections spécifiques Dark Mode */
+[data-theme="dark"] .text-muted { color: #9ca3af !important; }
+[data-theme="dark"] .text-dark { color: #f3f4f6 !important; }
+[data-theme="dark"] .border { border-color: var(--border-color) !important; }
+[data-theme="dark"] .modal-header { border-bottom-color: var(--border-color); }
+[data-theme="dark"] .form-control {
+    background-color: var(--bg-surface-alt);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+[data-theme="dark"] .form-control::placeholder { color: var(--text-secondary); }
+
+/* Bouton zoom en blanc doit passer en sombre */
+[data-theme="dark"] .bg-white.p-2.rounded-pill {
+    background-color: var(--bg-surface) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* ========================================= */
+/* 11. CORRECTIF ICÔNES (DARK MODE & CITOYEN) */
+/* ========================================= */
+
+/* 1. Définition propre des classes Santé/Bonheur (Mode Clair par défaut) */
+.stat-health { border-left-color: #ef4444; }
+.stat-health .stat-icon { background: #fee2e2; color: #ef4444; }
+
+.stat-happy { border-left-color: #8b5cf6; }
+.stat-happy .stat-icon { background: #ede9fe; color: #8b5cf6; }
+
+/* 2. OVERRIDES DARK MODE (À placer dans ou après le bloc [data-theme="dark"]) */
+[data-theme="dark"] .stat-budget .stat-icon {
+    background-color: rgba(16, 185, 129, 0.15) !important; /* Vert transparent */
+    color: #6ee7b7 !important; /* Vert néon */
+}
+[data-theme="dark"] .stat-energy .stat-icon {
+    background-color: rgba(245, 158, 11, 0.15) !important; /* Orange transparent */
+    color: #fcd34d !important; /* Jaune néon */
+}
+[data-theme="dark"] .stat-pop .stat-icon {
+    background-color: rgba(59, 130, 246, 0.15) !important; /* Bleu transparent */
+    color: #93c5fd !important; /* Bleu ciel */
+}
+[data-theme="dark"] .stat-health .stat-icon {
+    background-color: rgba(239, 68, 68, 0.15) !important; /* Rouge transparent */
+    color: #fca5a5 !important; /* Rouge clair */
+}
+[data-theme="dark"] .stat-happy .stat-icon {
+    background-color: rgba(139, 92, 246, 0.15) !important; /* Violet transparent */
+    color: #c4b5fd !important; /* Lavande */
+}
+
+/* ========================================= */
+/* 12. LANDING PAGE (AMBIENT GRADIENT)       */
+/* ========================================= */
+
+.hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    /* Le fond */
+    background: linear-gradient(-45deg, var(--hero-color-1), var(--hero-color-2), var(--hero-color-3), var(--hero-color-4));
+    background-size: 400% 400%;
+    
+    /* Animation du dégradé + TRANSITION DOUCE DU THEME (1.5s) */
+    animation: gradientBG 15s ease infinite;
+    transition: background 1.5s ease-in-out; 
+}
+
+/* Animation fluide des couleurs */
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* La carte en verre (Glassmorphism) - inchangée mais sans l'overlay sombre */
+/* La carte devient un conteneur invisible */
+/* --- CONTENEUR INVISIBLE (Correction) --- */
+.glass-card {
+    position: relative;
+    z-index: 10;
+    
+    /* ON TUE TOUT L'HABILLAGE VISUEL */
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    
+    /* On garde uniquement la mise en page */
+    padding: 0; /* Plus de padding interne inutile */
+    max-width: 900px;
+    width: 100%;
+    text-align: center;
+    
+    /* Animation d'entrée */
+    animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* On s'assure que le texte reste lisible (Couleurs dynamiques) */
+.glass-card h1 {
+    font-weight: 800;
+    color: var(--hero-text-title) !important;
+    margin-bottom: 1.5rem;
+    letter-spacing: -2px; /* Un peu plus serré pour le style */
+}
+
+.glass-card p {
+    color: var(--hero-text-subtitle) !important;
+    font-size: 1.5rem; /* Un peu plus gros car il n'y a plus de cadre */
+    font-weight: 500;
+    line-height: 1.6;
+    margin-bottom: 4rem;
+}
+
+/* Formes floues flottantes pour donner de la profondeur (Optionnel mais stylé) */
+.ambient-shape {
+    position: absolute;
+    filter: blur(80px);
+    z-index: 1;
+    opacity: 0.6;
+    animation: floatShape 20s infinite alternate;
+}
+.shape-1 {
+    top: 10%; left: 10%;
+    width: 300px; height: 300px;
+    background: #4f46e5;
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+}
+.shape-2 {
+    bottom: 10%; right: 10%;
+    width: 400px; height: 400px;
+    background: #818cf8;
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    animation-delay: -5s;
+}
+
+
+/* Animation d'entrée */
+@keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatShape {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(30px, 50px) rotate(20deg); }
+}
+
+/* ========================================= */
+/* 13. FORMULAIRES GLASS (LOGIN/SIGNUP)      */
+/* ========================================= */
+
+/* Champs de saisie style "Verre" */
+/* ========================================= */
+/* 13. FORMULAIRES GLASS (CORRIGÉ CONTRASTE) */
+/* ========================================= */
+
+/* Champs de saisie style "Verre" */
+.glass-input {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--input-text) !important; /* C'est ça qui répare le texte ! */
+    border-radius: 12px !important;
+    padding: 1rem 1rem !important;
+    transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+    background: var(--input-bg) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+    color: var(--input-text) !important;
+}
+
+/* Labels flottants (Bootstrap Floating Labels) */
+/* On utilise la variable placeholder pour que ça soit lisible jour et nuit */
+.form-floating > label {
+    color: var(--input-placeholder) !important; 
+    transition: all 0.2s ease;
+    z-index: 5;
+}
+
+/* Quand on clique ou qu'il y a du texte */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--input-text) !important; /* Devient de la couleur du texte principal */
+    opacity: 0.8;
+}
+
+/* Hack pour l'Autofill (Chrome/Edge) */
+/* On force la couleur du texte autofill à suivre notre thème */
+.glass-input:-webkit-autofill {
+    -webkit-text-fill-color: var(--input-text) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ========================================= */
+/* 14. FIX FLOATING LABELS (GLITCH BLANC)    */
+/* ========================================= */
+
+/* On supprime le fond coloré que Bootstrap ajoute automatiquement */
+.form-floating > .form-control:focus ~ label::after,
+.form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+    background-color: transparent !important; 
+}
+
+/* On s'assure que le label lui-même est transparent */
+.form-floating > label {
+    background-color: transparent !important;
+    z-index: 5; /* On le garde au dessus */
+}
+
+/* Petit ajustement pour que le texte soit bien lisible quand il remonte */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: rgba(255, 255, 255, 0.9) !important; /* Blanc presque pur */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Petite ombre pour lisibilité */
+    transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
+}
+
+/* ========================================= */
+/* 15. ANIMATIONS DE TRANSITION              */
+/* ========================================= */
+
+/* 1. Animation d'apparition douce sur TOUTES les pages */
+body {
+    animation: pageFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 2. Le Loader de sortie (Écran de chargement) */
+#transition-loader {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* Utilise la couleur de fond du thème actuel */
+    background-color: var(--bg-app); 
+    z-index: 20000; /* Au-dessus de tout */
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0;
+    pointer-events: none; /* Laisse passer les clics quand invisible */
+    transition: opacity 0.4s ease;
+}
+
+/* Classe pour activer le loader */
+#transition-loader.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Animation de pulsation pour l'icône */
+.pulse-icon {
+    font-size: 4rem;
+    animation: pulseCity 1.5s infinite;
+}
+
+@keyframes pulseCity {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+
+box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.btn-hero-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(79, 70, 229, 0.5);
+    color: white;
+}
+
+/* 2. Bouton Secondaire (Glass) */
+.btn-hero-glass {
+    background: var(--btn-glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--btn-glass-border);
+    color: var(--btn-glass-text);
+    transition: all 0.3s ease;
+}
+.btn-hero-glass:hover {
+    background: var(--btn-glass-border); /* Devient plus opaque */
+    transform: translateY(-3px);
+    color: var(--btn-glass-text);
+}
+
+/* --- BOUTON THEME AMÉLIORÉ --- */
+#theme-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--hero-text-title); /* S'adapte au thème */
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Effet rebond */
+}
+#theme-toggle:hover {
+    transform: rotate(15deg) scale(1.1);
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+
+/* --- DEFINITION DES GRADIENTS (Fixes) --- */
+:root {
+    /* Gradient JOUR (Ciel Pastel) */
+    --gradient-day: linear-gradient(-45deg, #bae6fd, #e0e7ff, #ddd6fe, #fbcfe8);
+    /* Gradient NUIT (Espace Profond) */
+    --gradient-night: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #4c1d95);
+}
+
+/* --- HERO SECTION (Le conteneur) --- */
+.hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    
+    /* COUCHE 1 : Fond par défaut (JOUR) */
+    background: var(--gradient-day);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    
+    /* Pas de transition ici, c'est géré par le ::before */
+}
+
+/* COUCHE 2 : Le Fond NUIT (Superposé) */
+.hero-section::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    
+    background: var(--gradient-night);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite; /* Même animation pour synchroniser */
+    
+    /* C'EST ICI QUE LA MAGIE OPERE */
+    opacity: 0; /* Invisible par défaut (Mode Jour) */
+    transition: opacity 1.5s ease-in-out; /* Fade lent */
+    z-index: 0; /* Derrière le contenu */
+}
+
+/* QUAND ON PASSE EN DARK MODE */
+[data-theme="dark"] .hero-section::before {
+    opacity: 1; /* Le fond nuit apparaît doucement par dessus le jour */
+}
+
+/* S'assurer que le contenu reste au-dessus du fond */
+.glass-card, .ambient-shape, .position-absolute {
+    z-index: 10;
+}
+.ambient-shape { z-index: 1; } /* Les formes restent derrière la carte */
+
+/* ========================================= */
+/* 16. FIX ULTIME FORMULAIRES (GLITCH)       */
+/* ========================================= */
+
+/* 1. On cache le placeholder natif pour éviter la superposition de texte */
+.glass-input::placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+
+/* 2. On supprime l'ombre portée sur les labels (cause du flou) */
+.form-floating > label,
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    text-shadow: none !important;
+    font-weight: 500; /* Un peu plus gras pour la lisibilité */
+}
+
+/* 3. Hack pour l'Autofill des navigateurs (Chrome/Edge) */
+/* Empêche le fond bleu/blanc automatique qui casse l'effet verre */
+.glass-input:-webkit-autofill,
+.glass-input:-webkit-autofill:hover, 
+.glass-input:-webkit-autofill:focus, 
+.glass-input:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important; /* Force le texte en blanc */
+    /* On force un fond transparent teinté via une ombre interne */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.2) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 3. Bouton Blanc (Haute Visibilité pour le Login) */
+.btn-hero-white {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1e1b4b !important; /* Texte foncé obligatoire */
+    border: none;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-hero-white:hover {
+    background-color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================= */
+/* 17. FORCE BRUTE DARK MODE (PATCH)         */
+/* ========================================= */
+
+/* On cible le body quand l'attribut data-theme="dark" est présent sur html */
+/* ========================================= */
+/* 17. FORCE BRUTE DARK MODE (FINAL)         */
+/* ========================================= */
+
+/* Force le fond sombre global */
+html[data-theme="dark"] body {
+    background-color: #0f172a !important;
+    color: #f3f4f6 !important;
+}
+
+/* Force tous les conteneurs blancs à devenir sombres */
+/* J'ai ajouté .modal-body, .modal-header, .modal-footer ici */
+/* Force tous les conteneurs blancs à devenir sombres */
+/* J'ai ajouté .modal-body, .modal-header, .modal-footer ici */
+html[data-theme="dark"] .bg-light,
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .stat-tile,
+html[data-theme="dark"] .card-body,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-body, 
+html[data-theme="dark"] .modal-header {
+    background-color: var(--bg-surface) !important; 
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+
+/* Force les titres en blanc */
+html[data-theme="dark"] h1, 
+html[data-theme="dark"] h2, 
+html[data-theme="dark"] h3, 
+html[data-theme="dark"] h4, 
+html[data-theme="dark"] h5, 
+html[data-theme="dark"] h6,
+html[data-theme="dark"] .text-dark {
+    color: #f3f4f6 !important;
+}
+
+/* Inverse la couleur de la croix de fermeture pour qu'elle soit blanche */
+html[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ========================================= */
+/* 18. LOADER DE TRANSITION (THEMED)         */
+/* ========================================= */
+#page-loader {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* Utilise la couleur de fond du thème actuel */
+    background-color: var(--bg-app); 
+    
+    /* Sécurité ultime pour cacher le formulaire dessous */
+    z-index: 2147483647; 
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* Par défaut caché */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* Quand il est actif, il devient totalement opaque */
+#page-loader.active {
+    opacity: 1 !important; /* Force l'opacité */
+    pointer-events: all;
+}
+
+/* ========================================= */
+/* 18. LOADER DE TRANSITION (UPDATE LOGO)    */
+/* ========================================= */
+
+/* ... (Le début de #page-loader reste inchangé) ... */
+
+.loader-content {
+    text-align: center;
+    /* On garde l'animation globale de pulsation sur le conteneur */
+    animation: pulseLoader 1.5s infinite ease-in-out;
+}
+
+/* NOUVEAU STYLE POUR L'IMAGE LOGO */
+.loader-logo {
+    width: 80px; /* Ajustez la taille selon votre goût */
+    height: auto;
+    margin-bottom: 1rem;
+    
+    /* Une ombre portée colorée pour le style "Glow" */
+    filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.5)); 
+}
+
+/* On supprime l'ancien style d'icône s'il existe encore */
+/* .loader-icon { ... } */
+
+.loader-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* L'animation de respiration */
+@keyframes pulseLoader {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.9); opacity: 0.7; } /* Un peu plus subtil que 0.95 */
+    100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* ========================================= */
+/* 18. LOADER DE TRANSITION (FINAL FIX)      */
+/* ========================================= */
+#page-loader {
+    position: fixed !important;
+    top: 0; left: 0; width: 100%; height: 100%;
+    
+    /* On force la couleur avec un fallback si la variable bug */
+    background-color: var(--bg-app, #0f172a) !important; 
+    
+    /* Z-Index Maximum pour passer au-dessus de tout */
+    z-index: 2147483647 !important; 
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* État initial caché */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+    
+    /* Petit flou pour masquer les glitchs visuels derrière */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* État actif : Visible et Opaque */
+#page-loader.active {
+    opacity: 1 !important;
+    pointer-events: all !important;
+    visibility: visible !important;
+}
+
+/* Animation du contenu */
+.loader-content {
+    text-align: center;
+    animation: pulseLoader 2s infinite ease-in-out;
+}
+
+.loader-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+    filter: drop-shadow(0 0 20px currentColor); 
+    color: var(--primary);
+}
+
+.loader-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+@keyframes pulseLoader {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.95); opacity: 0.7; }
+}
+
+/* Force le fond de la fenêtre de détail pour éviter la transparence sur la carte */
+.modal-body {
+    background-color: var(--bg-surface) !important;
+}
+html[data-theme="dark"] .modal-body {
+    background-color: #1e293b !important;
+}
+
+/* ========================================= */
+/* 19. FIX FINAL TRANSPARENCE MODALE         */
+/* ========================================= */
+
+/* 1. On force le conteneur global de la fenêtre à être opaque */
+.modal-content {
+    background-color: var(--bg-surface) !important; /* Blanc ou Gris selon le thème */
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5) !important; /* Grosse ombre pour bien détacher du fond */
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 2. On force le corps (là où tu as le bug) à être opaque aussi */
+.modal-body {
+    background-color: var(--bg-surface) !important;
+    position: relative;
+    z-index: 2; /* Pour être sûr d'être au-dessus */
+}
+
+/* 3. On force l'en-tête (le titre) */
+.modal-header {
+    background-color: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+
+/* ========================================= */
+/* 20. FIX CONTRASTE ALERTE CONSEIL (DARK)   */
+/* ========================================= */
+
+html[data-theme="dark"] .alert-light {
+    /* 1. On donne un fond encore plus sombre que la carte (pour la profondeur) */
+    background-color: var(--bg-surface-alt) !important; 
+    
+    /* 2. On rend le texte général blanc */
+    color: var(--text-primary) !important; 
+    
+    /* 3. On utilise une bordure très douce */
+    border-color: var(--border-color) !important; 
+}
+
+/* On s'assure que les indicateurs de danger restent visibles et alertants */
+html[data-theme="dark"] .alert-light .text-warning {
+    color: #fbbf24 !important; /* Jaune vif pour l'ampoule */
+}
+
+html[data-theme="dark"] .alert-light strong.text-danger {
+    color: #fca5a5 !important; /* Rouge clair pour les mots importants */
+}
+
+/* ========================================= */
+/* 21. FIX TOM-SELECT (DROPDOWN DARK MODE)   */
+/* ========================================= */
+
+/* 1. Conteneur de la liste déroulante */
+html[data-theme="dark"] .ts-dropdown {
+    /* Fond sombre (Gris bleuté) */
+    background-color: var(--bg-surface-alt) !important; 
+    border-color: var(--border-color) !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+}
+
+/* 2. Style des Options (Texte) */
+html[data-theme="dark"] .ts-dropdown .option {
+    color: var(--text-primary) !important; /* Texte blanc */
+    /* Empêche les backgrounds systèmes */
+    background-color: var(--bg-surface-alt) !important;
+}
+
+/* 3. Style au Survol / Active */
+html[data-theme="dark"] .ts-dropdown .option.active,
+html[data-theme="dark"] .ts-dropdown .option:hover {
+    /* Surligne en bleu clair discret */
+    background-color: var(--primary-light) !important; 
+    color: var(--text-primary) !important;
+}
+
+/* 4. Fix pour l'option désactivée (Mairie) */
+html[data-theme="dark"] .ts-dropdown .option.disabled {
+    color: var(--text-secondary) !important; /* Texte gris plus doux */
+    background-color: var(--bg-surface) !important;
+    opacity: 0.8;
+}
+
+
+
+
+/* Placeholder */
+.form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+/* --- AJOUT POUR FIXER FORMULAIRES GLASS EN DARK MODE --- */
+html[data-theme="dark"] .glass-input {
+    /* S'assurer que le fond est sombre même avec !important */
+    background-color: var(--bg-surface-alt) !important;
+    border-color: var(--border-color) !important;
+    color: var(--input-text) !important; /* Texte BLANC (hérité de :root) */
+}
+
+/* Fix du focus en mode sombre (pour la cohérence des couleurs de fond) */
+html[data-theme="dark"] .form-control:focus, 
+html[data-theme="dark"] .form-select:focus {
+    background-color: var(--bg-surface-alt);
+    border-color: var(--primary);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+}
+
+/* ========================================= */
+/* 3.1. CARTES DE SÉLECTION (Nouveau Fix)    */
+/* ========================================= */
+.card-choice {
+    cursor: pointer;
+    border: 2px solid var(--border-color); /* Bordure par défaut */
+    transition: all 0.2s ease;
+}
+
+.card-choice:hover {
+    border-color: var(--primary); /* Bordure bleue au survol */
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Style de sélection (quand le radio est coché) */
+.building-radio:checked + .card-choice {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+    background-color: var(--primary-light); /* Fond très léger */
+}
+
+.building-radio:checked + .card-choice .text-primary {
+    color: var(--primary-dark) !important; /* Pour que l'icône ressorte */
+}
+
+/* Style pour les options désactivées (Mairie déjà construite) */
+.disabled-choice {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Empêche tout clic */
+}
+
+/* ========================================= */
+/* 22. FIX TABLEAUX DARK MODE                */
+/* ========================================= */
+
+/* 1. On réinitialise les variables Bootstrap du tableau en mode sombre */
+html[data-theme="dark"] .table {
+    --bs-table-bg: transparent; /* Fond transparent pour voir la carte dessous */
+    --bs-table-color: var(--text-primary); /* Texte blanc */
+    --bs-table-border-color: var(--border-color); /* Bordures grises */
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05); /* Effet survol subtil */
+    color: var(--text-primary) !important;
+}
+
+/* 2. On force les cellules à être transparentes */
+html[data-theme="dark"] .table > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+/* 3. On corrige spécifiquement l'en-tête "bg-light" pour qu'il devienne sombre */
+html[data-theme="dark"] .table thead.bg-light {
+    background-color: var(--bg-surface-alt) !important; /* Un peu plus clair que la carte */
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* 4. On s'assure que les liens dans le tableau restent lisibles */
+html[data-theme="dark"] .table a {
+    color: var(--primary-light) !important;
+}
+
+/* 5. Fix des boutons d'action (btn-light) à l'intérieur du tableau */
+html[data-theme="dark"] .table .btn-light {
+    background-color: transparent !important; /* Fond transparent */
+    border-color: var(--border-color) !important; /* Bordure sombre */
+    color: var(--text-primary); /* Texte blanc par défaut */
+}
+
+/* Petit effet au survol pour qu'on sache que c'est cliquable */
+html[data-theme="dark"] .table .btn-light:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--primary) !important;
+}
+
+
+
+/* ========================================= */
+/* 23. FIX FINAL MODALES & SELECTS (RECRUTEMENT) */
+/* ========================================= */
+
+/* 1. Force le fond et le texte de la modale en Mode Sombre */
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-body,
+html[data-theme="dark"] .modal-footer {
+    background-color: var(--bg-surface) !important; /* Bleu nuit */
+    color: var(--text-primary) !important;          /* Blanc */
+    border-color: var(--border-color) !important;   /* Gris discret */
+}
+
+/* 2. Titre de la modale en blanc */
+html[data-theme="dark"] .modal-title {
+    color: white !important;
+}
+
+/* 3. La Croix de fermeture (X) -> Devient blanche */
+html[data-theme="dark"] .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* 4. CORRECTION CRITIQUE DES MENUS DÉROULANTS (<select>) */
+html[data-theme="dark"] .form-select {
+    background-color: var(--bg-surface-alt) !important; /* Fond sombre */
+    color: white !important;                            /* Texte blanc */
+    border: 1px solid var(--border-color) !important;
+    
+    /* Change la petite flèche (chevron) du menu pour qu'elle soit blanche */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+/* 5. La liste des options DANS le menu (souvent blanche par défaut système) */
+html[data-theme="dark"] .form-select option {
+    background-color: #1e293b !important; /* Force le fond gris foncé */
+    color: white !important;
+}
+
+/* 6. Zone de texte (Textarea) */
+html[data-theme="dark"] textarea.form-control {
+    background-color: var(--bg-surface-alt) !important;
+    color: white !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 7. Gestion des labels au-dessus des champs */
+html[data-theme="dark"] .modal-body .form-label {
+    color: var(--text-secondary) !important; /* Gris clair lisible */
+}
+
+
+/* ========================================= */
+/* 3.1. CARTES DE SÉLECTION (RADIO CARDS)    */
+/* ========================================= */
+/* Le bouton radio lui-même est caché par la classe Bootstrap .btn-check */
+
+/* Le label qui sert de carte visuelle */
+.card-choice {
+    cursor: pointer;
+    border: 2px solid var(--border-color); /* Bordure discrète par défaut */
+    background-color: var(--bg-surface-alt); /* Fond légèrement différent de la modale */
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet au survol */
+.card-choice:hover:not(.disabled-choice) {
+    border-color: var(--primary); /* Bordure bleue */
+    transform: translateY(-3px);  /* Léger soulèvement */
+    box-shadow: var(--shadow-md);
+}
+
+/* QUAND C'EST SÉLECTIONNÉ (Magie CSS) */
+/* On cible le label qui suit immédiatement un bouton radio coché */
+.building-radio:checked + .card-choice {
+    border-color: var(--primary) !important;
+    background-color: rgba(79, 70, 229, 0.1) !important; /* Fond bleu très léger */
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3); /* Double bordure lumineuse */
+}
+
+/* Pour que l'icône et le texte ressortent mieux quand c'est sélectionné */
+.building-radio:checked + .card-choice .text-primary,
+.building-radio:checked + .card-choice h6 {
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+/* Style pour les options désactivées (ex: Mairie déjà construite) */
+.card-choice.disabled-choice {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(0,0,0,0.05);
+}
+/* Grise l'image et le texte */
+.card-choice.disabled-choice img,
+.card-choice.disabled-choice h6,
+.card-choice.disabled-choice div {
+    filter: grayscale(100%); color: var(--text-muted) !important;
+}
+
+/* ========================================= */
+/* 23. FIX FINAL MODALES & SELECTS (RECRUTEMENT) */
+/* ========================================= */
+
+/* 1. CONFIGURATION DE BASE (MODE CLAIR) */
+/* On force le blanc opaque par défaut pour éviter la transparence */
+.modal-content, .modal-header, .modal-body, .modal-footer {
+    background-color: #ffffff !important; /* Blanc pur */
+    color: #1e1b4b !important;            /* Texte foncé */
+    border-color: #e5e7eb !important;     /* Bordure grise claire */
+}
+
+/* 2. MODE SOMBRE : On écrase avec les couleurs sombres */
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-body,
+html[data-theme="dark"] .modal-footer {
+    background-color: #1e293b !important; /* Gris bleuté (Slate 800) */
+    color: #f3f4f6 !important;            /* Blanc cassé */
+    border-color: #374151 !important;     /* Bordure sombre */
+}
+
+/* 3. Titre de la modale en blanc (Dark Mode uniquement) */
+html[data-theme="dark"] .modal-title {
+    color: white !important;
+}
+
+/* 4. La Croix de fermeture (X) -> Devient blanche */
+html[data-theme="dark"] .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* 5. CORRECTION CRITIQUE DES MENUS DÉROULANTS (<select>) */
+html[data-theme="dark"] .form-select {
+    background-color: #334155 !important; /* Fond plus clair que la modale pour le contraste */
+    color: white !important;
+    border: 1px solid #475569 !important;
+    
+    /* L'IMAGE DE LA FLÈCHE (SVG BLANC) */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    
+    /* --- LE FIX EST ICI : On empêche la répétition --- */
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 16px 12px !important;
+}
+
+/* 6. La liste des options DANS le menu */
+html[data-theme="dark"] .form-select option {
+    background-color: #1e293b !important;
+    color: white !important;
+}
+
+/* 7. Zone de texte (Textarea) */
+html[data-theme="dark"] textarea.form-control {
+    background-color: #334155 !important;
+    color: white !important;
+    border-color: #475569 !important;
+}
+
+/* 8. Labels */
+html[data-theme="dark"] .modal-body .form-label {
+    color: #cbd5e1 !important; /* Gris clair */
+}
+
+
+/* ========================================= */
+/* 24. INPUT GROUPS FUSIONNÉS (BANQUE)       */
+/* ========================================= */
+
+.input-group-merged .input-group-text {
+    background-color: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+    border-right: none; /* Pas de bordure à droite */
+    color: var(--text-muted);
+}
+
+.input-group-merged .form-control {
+    background-color: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+    border-left: none; /* Pas de bordure à gauche */
+    border-right: none; /* Pas de bordure à droite */
+    box-shadow: none !important; /* Enlève le focus bleu standard */
+}
+
+.input-group-merged .btn {
+    border: 1px solid var(--border-color);
+    border-left: none; /* Pas de bordure à gauche */
+    background-color: var(--bg-surface-alt);
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.input-group-merged .btn:hover {
+    background-color: var(--primary-light);
+}
+
+/* En mode sombre, on s'assure que ça reste joli */
+html[data-theme="dark"] .input-group-merged .input-group-text,
+html[data-theme="dark"] .input-group-merged .form-control,
+html[data-theme="dark"] .input-group-merged .btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+/* ========================================= */
+/* 24. INPUT GROUPS FUSIONNÉS (PERFECT)      */
+/* ========================================= */
+
+/* On met la bordure sur le groupe entier, pas sur les éléments */
+.input-group-merged {
+    border: 1px solid var(--border-color);
+    border-radius: 12px; /* Arrondi moderne */
+    background-color: var(--bg-surface-alt); /* Fond uni */
+    transition: all 0.2s;
+    overflow: hidden; /* Important pour que les enfants ne dépassent pas */
+}
+
+/* Effet de focus sur tout le groupe */
+.input-group-merged:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* On enlève les bordures et fonds des enfants pour qu'ils se fondent */
+.input-group-merged .input-group-text,
+.input-group-merged .form-control,
+.input-group-merged .btn {
+    border: none !important;
+    background-color: transparent !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+.input-group-merged .form-control:focus {
+    box-shadow: none !important; /* Plus de halo bleu sur l'input seul */
+}
+
+/* Bouton Max : On lui donne un style de texte cliquable */
+.input-group-merged .btn {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.input-group-merged .btn:hover {
+    background-color: rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Mode Sombre */
+html[data-theme="dark"] .input-group-merged {
+    background-color: rgba(255, 255, 255, 0.05); /* Fond sombre transparent */
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+
+/* ========================================= */
+/* 25. FIX DROPDOWNS BOOTSTRAP (DARK MODE)   */
+/* ========================================= */
+
+/* Le menu déroulant lui-même */
+html[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bg-surface-alt) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Les éléments du menu */
+html[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Les séparateurs */
+html[data-theme="dark"] .dropdown-divider {
+    border-top-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .dropdown-header {
+    color: var(--text-secondary) !important;
+}
+
+/* ========================================= */
+/* 25. FIX DROPDOWNS BOOTSTRAP (DARK MODE)   */
+/* ========================================= */
+
+/* 1. Le conteneur du menu (Fond sombre) */
+html[data-theme="dark"] .dropdown-menu {
+    background-color: #1e293b !important; /* Gris bleuté foncé (Slate 800) */
+    border: 1px solid #374151 !important; /* Bordure grise */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Ombre profonde */
+}
+
+/* 2. Les éléments du menu (Texte BLANC force) */
+html[data-theme="dark"] .dropdown-item {
+    color: #f3f4f6 !important; /* Blanc cassé */
+    transition: all 0.2s;
+}
+
+/* 3. Au survol ou focus (Fond plus clair + Texte Blanc pur) */
+html[data-theme="dark"] .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+/* 4. Les en-têtes (ex: "Gestion RH") */
+html[data-theme="dark"] .dropdown-header {
+    color: #9ca3af !important; /* Gris clair lisible */
+    font-weight: 600;
+}
+
+/* 5. Les séparateurs */
+html[data-theme="dark"] .dropdown-divider {
+    border-top-color: #374151 !important;
+}
+
+/* 6. Cas spécifique des boutons "Danger" (Licencier) dans le menu */
+html[data-theme="dark"] .dropdown-item.text-danger {
+    color: #fca5a5 !important; /* Rouge clair (plus lisible sur fond sombre) */
+}
+html[data-theme="dark"] .dropdown-item.text-danger:hover {
+    background-color: rgba(220, 38, 38, 0.2) !important; /* Fond rouge léger */
+    color: #fff !important;
+}
+
+/* ========================================= */
+/* 26. FIX BOUTONS BLANCS EN DARK MODE       */
+/* (Recruter, Réparer, Détruire, 3 points)  */
+/* ========================================= */
+
+/* 1. Cible les boutons "Soft White" (Recruter/Réparer) ET "Light" (3 points) */
+html[data-theme="dark"] .btn-soft.btn-white,
+html[data-theme="dark"] .btn-light {
+    /* Fond sombre (le même que les inputs ou menus) */
+    background-color: var(--bg-surface-alt) !important; 
+    
+    /* Bordure grise pour délimiter le bouton */
+    border: 1px solid var(--border-color) !important; 
+    
+    /* Texte BLANC */
+    color: var(--text-primary) !important;
+    
+    /* Transition douce */
+    transition: all 0.2s ease;
+}
+
+/* 2. Effet au survol (Hover) */
+html[data-theme="dark"] .btn-soft.btn-white:hover,
+html[data-theme="dark"] .btn-light:hover {
+    /* On éclaire légèrement le fond */
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    
+    /* La bordure devient de la couleur primaire (Bleu/Violet) */
+    border-color: var(--primary) !important;
+    
+    /* Texte reste blanc pur */
+    color: #ffffff !important;
+}
+
+/* 3. Cas particulier pour les icônes à l'intérieur */
+/* On s'assure que les icônes (outils jaunes, bonhomme bleu) gardent leur couleur */
+html[data-theme="dark"] .btn-soft.btn-white i {
+    opacity: 1 !important; /* On enlève la transparence pour qu'ils brillent */
+}
+
+/* 4. Cas particulier : Bouton Détruire (qui a la classe text-danger) */
+html[data-theme="dark"] .btn-soft.btn-white.text-danger {
+    color: #fca5a5 !important; /* Rouge clair lisible */
+    border-color: rgba(220, 38, 38, 0.5) !important;
+}
+
+html[data-theme="dark"] .btn-soft.btn-white.text-danger:hover {
+    background-color: rgba(220, 38, 38, 0.2) !important; /* Fond rouge léger au survol */
+    border-color: #ef4444 !important;
+}
+
+/* ========================================= */
+/* 27. FIX BANQUE (TEXTE & BOUTONS)          */
+/* ========================================= */
+
+/* 1. Le texte d'aide (form-text) en blanc sur fond sombre */
+html[data-theme="dark"] .form-text {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 2. Harmonisation des boutons Banque (Si on veut surcharger spécifiquement) */
+/* Cette classe rendra tous les boutons de la banque identiques */
+.btn-bank-action {
+    background-color: #4f46e5; /* Indigo */
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+    transition: all 0.2s ease;
+}
+.btn-bank-action:hover {
+    background-color: #4338ca;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.5);
+    color: white;
+}
+
+/* Animation d'apparition vers le haut */
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+
+/* ========================================= */
+/* 28. ANIMATION ERREUR SÉLECTION            */
+/* ========================================= */
+
+/* Le message d'erreur caché par défaut */
+.local-error-msg {
+    color: #ef4444; /* Rouge */
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-top: 5px;
+    display: none; /* Caché */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.local-error-msg.visible {
+    display: block;
+    opacity: 1;
+}
+
+/* Animation de Secousse (Shake) */
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); border-color: #ef4444; }
+    50% { transform: translateX(5px); border-color: #ef4444; }
+    75% { transform: translateX(-5px); border-color: #ef4444; }
+    100% { transform: translateX(0); border-color: var(--border-color); }
+}
+
+.shake-error {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* ========================================= */
+/* 29. BULLE D'ERREUR SUR LA CARTE (FIX)     */
+/* ========================================= */
+
+.map-error-tooltip {
+    position: absolute;
+    /* On la place bien au-dessus du centre du bâtiment */
+    top: -50px; 
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    
+    background-color: #ef4444; /* Rouge vif */
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    pointer-events: none;
+    
+    opacity: 0;
+    visibility: hidden; /* Important pour éviter les clics fantômes */
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 9999 !important; /* Très haut pour passer devant tout */
+}
+
+/* La petite flèche */
+.map-error-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background-color: #ef4444;
+}
+
+/* État visible */
+.map-error-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Animation de secousse pour le bâtiment */
+@keyframes shakeBuilding {
+    0%, 100% { transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.6); }
+    25% { transform: translateX(-85%) rotateZ(45deg) rotateX(-60deg) scale(1.6); }
+    75% { transform: translateX(-75%) rotateZ(45deg) rotateX(-60deg) scale(1.6); }
+}
+
+.shake-it .building-sprite {
+    animation: shakeBuilding 0.4s ease-in-out;
+}

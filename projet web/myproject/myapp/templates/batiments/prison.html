@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Incarcération - {{ citoyen.prenom }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #050505;
+            color: #ccc;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* LES BARREAUX (En arrière-plan) */
+        .prison-bars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 100px,
+                rgba(30, 30, 30, 0.95) 100px,
+                rgba(20, 20, 20, 0.95) 120px
+            );
+            pointer-events: none;
+            z-index: 1; 
+            box-shadow: inset 0 0 150px #000;
+        }
+
+        /* LA BOITE DE MESSAGE (Au premier plan) */
+        .prison-card {
+            border: 1px solid #333;
+            background: rgba(10, 10, 10, 0.95); 
+            padding: 3rem;
+            text-align: center;
+            max-width: 550px;
+            width: 90%;
+            position: relative;
+            z-index: 10; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .timer {
+            font-size: 3.5rem;
+            color: #e74c3c;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        .refresh-btn {
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+        .refresh-btn:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .logout-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+        .logout-link:hover {
+            color: #d63031;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="prison-bars"></div>
+
+    <div class="prison-card">
+        <div class="mb-4">
+            <i class="fas fa-lock fa-4x text-secondary mb-3"></i>
+            <h2 class="text-uppercase" style="letter-spacing: 3px; color: #fff;">Pénitencier</h2>
+            <div class="badge bg-danger rounded-0 px-3 py-2 mt-2">DÉTENU #{{ citoyen.id }}</div>
+        </div>
+        
+        <p class="fs-5 text-white mb-1">Incarcération en cours.</p>
+        <p class="text-muted small mb-4">Vos droits d'accès à la ville sont suspendus.</p>
+        
+        <hr class="border-secondary my-4 opacity-25">
+        
+        <div class="mb-2 text-uppercase small text-muted fw-bold">Libération dans</div>
+        
+        <div id="countdown" class="timer" data-end="{{ citoyen.date_liberation|date:'c' }}">
+            --:--
+        </div>
+        
+        <div class="mt-5 d-flex flex-column align-items-center gap-3">
+            <a href="{% url 'cellule_prison' %}" class="btn btn-outline-light btn-sm rounded-pill px-4 refresh-btn">
+                <i class="fas fa-sync-alt me-2"></i> Forcer l'actualisation
+            </a>
+
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link logout-link p-0 border-0 bg-transparent">
+                    <i class="fas fa-power-off me-1"></i> Se déconnecter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const timerEl = document.getElementById('countdown');
+            const endTime = new Date(timerEl.dataset.end).getTime();
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    timerEl.innerHTML = "00:00";
+                    timerEl.style.color = "#2ecc71"; // Vert
+                    setTimeout(() => {
+                        window.location.reload(); 
+                    }, 1500);
+                    return;
+                }
+
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                timerEl.innerHTML = 
+                    (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                    (seconds < 10 ? "0" + seconds : seconds);
+            }
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,102 @@
+{% if is_manager %}
+    <div class="d-flex flex-column gap-4">
+        
+        <div class="card shadow-lg border-0 border-start border-4 border-danger">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-handcuffs me-2 text-danger"></i> Mandat d'Arrêt</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="{% url 'arreter_citoyen' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Suspect</label>
+                        <select name="citoyen_id" id="suspectSelect" class="form-select glass-input" required>
+                            <option value="" selected disabled>Choisir un citoyen...</option>
+                            {% for c in citoyens_list %}
+                                <option value="{{ c.id }}">{{ c.prenom }} {{ c.nom }} ({{ c.age }} ans)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="arrestFormDetails" class="d-none fade-in-up">
+                        <hr class="border-light my-4">
+                        <div class="row g-2 mb-4">
+                            <div class="col-7">
+                                <label class="form-label small fw-bold text-muted">Motif</label>
+                                <input type="text" name="motif" class="form-control glass-input" required>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label small fw-bold text-muted">Peine</label>
+                                <div class="input-group input-group-merged bg-white border rounded overflow-hidden">
+                                    <input type="number" name="duree" class="form-control border-0 shadow-none text-center fw-bold" value="10" min="1" required style="font-size: 1.1rem; min-width: 60px;">
+                                    <select name="unite_temps" class="form-select border-0 bg-transparent text-end pe-3 shadow-none fw-bold" style="width: auto; cursor: pointer;">
+                                        <option value="minutes">Min</option>
+                                        <option value="heures">H</option>
+                                        <option value="jours">J</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-soft btn-white text-danger w-100 border-danger"
+                                data-confirm="Confirmer l'incarcération ?" data-title="Arrestation" data-type="danger">
+                            <i class="fas fa-gavel me-2"></i> SIGNER L'ÉCROU
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-lg border-0" style="max-height: 500px; overflow: hidden;"> <div class="card-header bg-dark text-white border-0 pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-file-contract me-2"></i> Main Courante</h5>
+                </div>
+                <span class="badge bg-danger rounded-pill">{{ plaintes.count }}</span>
+            </div>
+            <div class="card-body p-0 overflow-auto"> <div class="list-group list-group-flush">
+                    {% for p in plaintes %}
+                        <div class="list-group-item p-3 border-bottom-0 border-top bg-light">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="me-3">
+                                    <strong class="text-dark small"><i class="fas fa-user-secret me-1"></i> {{ p.citoyen.prenom }} {{ p.citoyen.nom }}</strong>
+                                    <div class="p-2 bg-white border rounded mt-1 small text-muted">{{ p.message }}</div>
+                                </div>
+                                <a href="{% url 'supprimer_notification' p.id %}" class="btn btn-sm btn-outline-secondary border-0"><i class="fas fa-archive"></i></a>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted">R.A.S.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-gavel me-2 text-danger"></i> Déposer une plainte</h5>
+        </div>
+        <div class="card-body p-4">
+            <form action="{% url 'police_deposer_plainte' %}" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Accusé</label>
+                    <select name="accuse_id" class="form-select glass-input" required>
+                        <option value="" selected disabled>Choisir...</option>
+                        {% for c in citoyens_list %}
+                            <option value="{{ c.id }}">{{ c.prenom }} {{ c.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Détails</label>
+                    <textarea name="motif" class="form-control glass-input" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn-soft btn-white text-danger w-100 border-danger"
+                        data-confirm="Signer cette déposition ?" data-title="Plainte" data-type="danger">
+                    <i class="fas fa-file-signature me-2"></i> Déposer plainte
+                </button>
+            </form>
+        </div>
+    </div>
+{% endif %}

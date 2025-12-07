@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Contacts</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* DESIGN TYPE IPHONE / WHATSAPP */
+        body, html { height: 100%; margin: 0; background-color: #fff; overflow: hidden; }
+        .app-container { display: flex; flex-direction: column; height: 100%; }
+        
+        .phone-header { 
+            background: #f8f9fa; padding: 15px; border-bottom: 1px solid #eee; 
+            text-align: center; font-weight: 800; font-size: 1.1rem;
+            flex: 0 0 auto; z-index: 10;
+        }
+
+        .phone-body { flex: 1 1 auto; overflow-y: auto; padding-bottom: 20px; }
+        
+        .contact-item { 
+            padding: 15px 20px; border-bottom: 1px solid #f0f0f0; 
+            display: flex; align-items: center; text-decoration: none; color: #333; 
+            transition: background 0.1s; 
+        }
+        .contact-item:active { background-color: #e9ecef; }
+        
+        .avatar { 
+            width: 45px; height: 45px; background: #eee; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            margin-right: 15px; font-weight: bold; color: #666; font-size: 18px;
+        }
+
+        .unread-dot {
+            width: 10px; height: 10px; background-color: #0d6efd; border-radius: 50%; margin-left: auto;
+        }
+        
+        .is-unread .name { font-weight: 800; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-header">Discussions</div>
+        
+        <div class="phone-body">
+            {% for item in contacts_data %}
+                <a href="{% url 'telephone_chat' item.citoyen.id %}" class="contact-item {% if item.has_unread %}is-unread{% endif %}">
+                    <div class="avatar">{{ item.citoyen.prenom|slice:":1" }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span class="name">{{ item.citoyen.prenom }} {{ item.citoyen.nom }}</span>
+                            {% if item.last_message %}
+                                <span style="font-size: 0.7rem; color: #999;">{{ item.last_message.date_envoi|date:"H:i" }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted text-truncate" style="font-size: 0.85rem;">
+                            {% if item.last_message %}
+                                {% if item.last_message.expediteur == item.citoyen %}
+                                    {{ item.last_message.contenu }}
+                                {% else %}
+                                    <span class="text-secondary">Vous : {{ item.last_message.contenu }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-secondary small">Nouvelle discussion</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if item.has_unread %} <div class="unread-dot"></div> {% endif %}
+                </a>
+            {% empty %}
+                <div class="text-center mt-5 text-muted"><p>Aucun contact.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

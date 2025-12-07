@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Espace - {{ citoyen.prenom }}{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} Espace<span class="fw-light">Citoyen</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                
+                {% if user.is_superuser or user.is_adjoint %}
+                    <a href="{% url 'dashboard' %}?mode=admin" class="btn btn-sm btn-primary shadow-sm rounded-pill px-3 fw-bold text-white">
+                        <i class="fas fa-city me-2"></i> Administration
+                    </a>
+                {% endif %}
+
+                <div class="d-none d-md-block text-end">
+                    <div class="small fw-bold text-dark">{{ citoyen.prenom }} {{ citoyen.nom }}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">
+                        Citoyen de {{ ville.nom }}
+                    </div>
+                </div>
+                
+                <div class="bg-light rounded-circle p-2 text-primary border">
+                    <i class="fas fa-user"></i>
+                </div>
+
+                {% include 'fragments/theme_btn.html' %}
+
+                <form action="{% url 'logout' %}" method="post" class="ms-2 logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mb-5">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mt-3 border-0">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="text-center py-5">
+        <span class="badge bg-white text-dark border shadow-sm rounded-pill mb-3 px-3 py-2 fw-normal">
+            <i class="far fa-clock text-primary me-1"></i> <span id="live-clock">--:--</span>
+        </span>
+        <h1 class="display-5 fw-bold mb-2">Bonjour <span class="text-primary">{{ citoyen.prenom }}</span> !</h1>
+        <p class="text-muted">Gérez votre vie, votre emploi et votre logement.</p>
+        
+        <a href="{% url 'mon_profil' %}" class="btn btn-white bg-white text-dark border shadow-sm rounded-pill px-4 py-2 text-decoration-none mt-2">
+            <i class="fas fa-user-cog"></i> Modifier mon profil
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stat-tile stat-budget">
+                <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                <div class="stat-content">
+                    <h2>{{ citoyen.argent|floatformat:0 }} <small class="fs-6 text-muted">€</small></h2>
+                    <p>Épargne : {{ citoyen.epargne }} €</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-tile stat-health"> 
+                <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
+                <div class="stat-content">
+                    <h2>{{ citoyen.sante }} <small class="fs-6 text-muted">%</small></h2>
+                    <p>Santé physique</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-tile stat-happy"> 
+                <div class="stat-icon"><i class="fas fa-smile"></i></div>
+                <div class="stat-content">
+                    <h2>{{ citoyen.bonheur }} <small class="fs-6 text-muted">%</small></h2>
+                    <p>Bonheur général</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-lg-5">
+            
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-envelope me-2 text-primary"></i> 
+                        <span class="fw-bold">Notifications</span>
+                        {% if notifications|length > 0 %} 
+                            <span class="badge bg-danger rounded-pill ms-2" id="notif-badge">{{ notifications|length }}</span> 
+                        {% endif %}
+                    </div>
+                    
+                    {% if notifications|length > 0 %}
+                        <form id="form-delete-all" action="{% url 'supprimer_toutes_notifications' %}" method="post" class="m-0">
+                            {% csrf_token %}
+                            <button type="button" id="btn-delete-all" class="btn btn-xs btn-outline-danger rounded-pill py-0 px-2" style="font-size: 0.75rem;">
+                                Tout effacer
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush" id="notif-list">
+                        {% for cand in notifications %}
+                            
+                            <li class="list-group-item p-3 border-bottom notif-item {% if forloop.counter > 5 %}collapse hidden-notifs{% endif %}">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">{{ cand.date_creation|date:"d/m H:i" }}</small>
+                                    
+                                    {% if cand.statut == 'EN_ATTENTE' and not cand.initiateur_est_citoyen %}
+                                        <span class="badge bg-warning text-dark">Offre d'emploi</span>
+                                    {% elif cand.statut == 'REFUSEE' %}
+                                        <span class="badge bg-danger">Refus</span>
+                                    {% elif cand.statut == 'ACCEPTEE' %}
+                                        <span class="badge bg-success">Embauché</span>
+                                    {% elif cand.statut == 'VIRE' %}
+                                        <span class="badge bg-dark">Licenciement</span>
+                                    {% elif cand.statut == 'VIREMENT' %}
+                                        <span class="badge bg-success text-white"><i class="fas fa-money-bill-wave me-1"></i> Reçu</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Info</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <p class="mb-2 fw-bold text-dark">{{ cand.batiment.nom }}</p>
+                                
+                                {% if cand.message %}
+                                    <div class="bg-light p-2 rounded small text-muted mb-2 fst-italic">"{{ cand.message }}"</div>
+                                {% endif %}
+
+                                {% if cand.statut == 'EN_ATTENTE' and not cand.initiateur_est_citoyen %}
+                                    <div class="d-flex gap-2">
+                                        <a href="{% url 'traiter_candidature' cand.id 'accepter' %}" class="btn btn-sm btn-success flex-fill">Accepter</a>
+                                        <a href="{% url 'traiter_candidature' cand.id 'refuser' %}" class="btn btn-sm btn-outline-danger flex-fill">Refuser</a>
+                                    </div>
+                                {% else %}
+                                    <div class="text-end">
+                                        <button type="button" 
+                                                class="btn btn-link text-secondary small text-decoration-none p-0 border-0 btn-delete-notif"
+                                                data-url="{% url 'supprimer_notification' cand.id %}">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-center py-5 text-muted opacity-50 empty-msg">
+                                <i class="far fa-envelope-open fs-1 mb-2"></i><br>
+                                Aucun message.
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if notifications|length > 5 %}
+                        <div class="card-footer bg-white text-center p-0 border-0">
+                            <button class="btn btn-link text-decoration-none w-100 py-2 small fw-bold text-primary" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target=".hidden-notifs" 
+                                    aria-expanded="false"
+                                    onclick="toggleNotifText(this)">
+                                <i class="fas fa-chevron-down me-1"></i> Voir les anciennes notifications
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><i class="fas fa-briefcase me-2 text-primary"></i> Situation Pro</div>
+                <div class="card-body">
+                    {% if citoyen.lieu_travail %}
+                        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center">
+                            <div class="fs-1 me-3"><i class="fas fa-building"></i></div>
+                            <div>
+                                <h5 class="mb-0">{{ citoyen.lieu_travail.nom }}</h5>
+                                <small>Votre employeur actuel</small>
+                            </div>
+                        </div>
+                        
+                        <h6 class="fw-bold mt-4 mb-2 small text-uppercase text-muted">Affichage Entreprise</h6>
+                        <ul class="list-group list-group-flush mb-3 border rounded">
+                            {% for note in citoyen.lieu_travail.notes_service.all|dictsortreversed:"id"|slice:":3" %}
+                                <li class="list-group-item small">
+                                    <strong>{{ note.titre }}</strong>: {{ note.contenu }}
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item small text-muted">Aucune note de service.</li>
+                            {% endfor %}
+                        </ul>
+
+                        <form action="{% url 'demissionner' %}" method="post">
+                            {% csrf_token %}
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="message" class="form-control" placeholder="Motif de départ...">
+                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Êtes-vous sûr ?');">Démissionner</button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="text-danger mb-3 fw-bold"><i class="fas fa-couch fs-2 mb-2 d-block"></i> Actuellement au chômage</div>
+                            <button class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#marcheEmploi">
+                                <i class="fas fa-search me-2"></i> Voir les offres d'emploi
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header"><i class="fas fa-home me-2 text-primary"></i> Logement</div>
+                <div class="card-body">
+                    {% if citoyen.lieu_vie %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary me-3">
+                                <i class="fas fa-home fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">{{ citoyen.lieu_vie.nom }}</h5>
+                                <small class="text-muted">Capacité : {{ citoyen.lieu_vie.locataires.count }} / {{ citoyen.lieu_vie.capacite }} habitants</small>
+                            </div>
+                        </div>
+                        <form action="{% url 'demenager' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Rendre les clés ?');">Déménager</button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning border-0 shadow-sm text-center">
+                            <i class="fas fa-exclamation-triangle mb-2 fs-3"></i><br>
+                            <strong>Sans Domicile Fixe</strong><br>
+                            Trouvez un toit rapidement pour votre santé !
+                        </div>
+                        <button class="btn btn-info text-white w-100" type="button" data-bs-toggle="collapse" data-bs-target="#listeLogements">
+                            <i class="fas fa-key me-2"></i> Chercher un logement
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-secondary bg-opacity-10 p-3 rounded-circle text-secondary me-3">
+                            <i class="fas fa-car fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Véhicule Personnel</h6>
+                            <small class="text-muted">{% if citoyen.vehicule %}Possédé{% else %}Non acquis{% endif %}</small>
+                        </div>
+                    </div>
+                    {% if not citoyen.vehicule %}
+                        <form action="{% url 'acheter_voiture' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-dark">Acheter (500€)</button>
+                        </form>
+                    {% else %}
+                        <span class="badge bg-success"><i class="fas fa-check"></i> OK</span>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div> 
+        
+        <div class="col-lg-7">
+            
+            <div class="collapse mb-4 {% if request.GET.tab == 'market' and not citoyen.lieu_travail %}show{% endif %}" id="marcheEmploi">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary text-white">🏢 Offres d'emploi disponibles</div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for bat in ville.batiments.all %}
+                                {% if bat.peut_embaucher %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div>
+                                            <strong>{{ bat.nom }}</strong>
+                                            <div class="small text-muted">{{ bat.get_type_batiment_display }}</div>
+                                        </div>
+                                        {% if bat.id in ids_candidatures %}
+                                            <button class="btn btn-light btn-sm border" disabled><i class="fas fa-clock"></i> Candidature envoyée</button>
+                                        {% else %}
+                                            <form action="{% url 'postuler' bat.id %}" method="post" class="d-flex gap-2">
+                                                {% csrf_token %}
+                                                <input type="text" name="message" class="form-control form-control-sm" placeholder="Motivation..." required>
+                                                <button type="submit" class="btn btn-primary btn-sm">Postuler</button>
+                                            </form>
+                                        {% endif %}
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapse mb-4 {% if request.GET.tab == 'housing' and not citoyen.lieu_vie %}show{% endif %}" id="listeLogements">
+                <div class="card border-info shadow-sm">
+                    <div class="card-header bg-info text-white">🏠 Logements disponibles</div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for bat in ville.batiments.all %}
+                                {% if bat.est_logement %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div>
+                                            <strong>{{ bat.nom }}</strong>
+                                            {% if bat.places_disponibles > 0 %}
+                                                <span class="badge bg-success bg-opacity-25 text-success ms-2">{{ bat.places_disponibles }} places</span>
+                                            {% else %}
+                                                <span class="badge bg-danger bg-opacity-25 text-danger ms-2">Complet</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if bat.places_disponibles > 0 %}
+                                            <form action="{% url 'emmenager' bat.id %}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-info text-white">Emménager</button>
+                                            </form>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-light" disabled>Indisponible</button>
+                                        {% endif %}
+                                    </li>
+                                {% endif %}
+                            {% empty %}
+                                <li class="list-group-item text-center text-muted p-4">Aucun logement construit pour l'instant.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-5 position-relative">
+                <div class="d-flex justify-content-between align-items-end mb-3">
+                    <h3 class="h4 fw-bold m-0">🗺️ Ma Ville</h3>
+                    
+                    <div class="d-flex align-items-center bg-white p-2 rounded-pill shadow-sm border gap-2">
+                        <button class="btn btn-sm btn-light rounded-circle" onclick="recenterMap()" title="Recentrer">
+                            <i class="fas fa-crosshairs text-primary"></i>
+                        </button>
+                        <div class="vr opacity-25"></div>
+                        <i class="fas fa-search-minus text-muted zoom-btn ms-2" onclick="manualZoom(-1)"></i>
+                        <input type="range" class="form-range mx-2" min="0.2" max="1.5" step="0.1" value="0.5" id="zoomSlider" style="width: 100px;">
+                        <i class="fas fa-search-plus text-muted zoom-btn me-2" onclick="manualZoom(1)"></i>
+
+                        {% if request.user.is_superuser %}
+                            <div class="vr opacity-25"></div>
+                            <button id="toggleRoadMode" class="btn btn-sm btn-light rounded-circle" title="Mode Construction Route">
+                                <i class="fas fa-road text-success"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card border-0 shadow-lg overflow-hidden">
+                    <div class="card-body p-0 position-relative" id="city-viewport">
+                        <div class="iso-scene" id="cityScene">
+                            <div id="the-sun" class="celestial-body sun"></div>
+                            <div id="the-moon" class="celestial-body moon"></div>
+                            
+                            <div class="iso-map">
+                                <div class="iso-grid"></div>
+    
+                                {% load static %} 
+                                {% for bat in ville.batiments.all %}
+                                    <a href="{% url 'batiment_detail' bat.id %}" 
+                                    class="iso-building building-link" 
+                                    data-bat-name="{{ bat.nom }}"
+                                    style="
+                                        left: calc(var(--cell-size) * {{ bat.x }}); 
+                                        top: calc(var(--cell-size) * {{ bat.y }});
+                                        width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
+                                        height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px);
+                                        z-index: {{ bat.y|add:bat.hauteur|add:10 }};
+                                        /* ON A ENLEVÉ LE STYLE D'OPACITÉ ICI POUR ÉVITER L'APLATISSEMENT */
+                                    ">
+                                        
+                                        <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
+                                            alt="{{ bat.type_batiment }}"
+                                            class="building-sprite"
+                                            style="{% if bat == moving_batiment %}opacity: 0.6; filter: grayscale(100%) brightness(1.2);{% endif %}"
+                                            onerror="this.src='https://via.placeholder.com/150?text=IMG'">
+                                            
+                                        <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> 
+    </div> 
+</div> 
+
+
+
+
+{% endblock %}
+
+{{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // 1. SCROLL & DRAG
+    const scene = document.querySelector('.iso-scene');
+    let isDown = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var phoneMenu = document.getElementById('offcanvasPhone');
+        if (phoneMenu) {
+            document.body.appendChild(phoneMenu);
+        }
+
+        initGridSystem();
+        
+        // --- INITIALIZE NOTIFICATION HANDLERS ---
+        initNotificationHandlers();
+        loadZoomState();
+    });
+
+    function initNotificationHandlers() {
+        // --- 1. GESTION SUPPRESSION UNITAIRE (AJAX) ---
+        const deleteBtns = document.querySelectorAll('.btn-delete-notif');
+        
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const url = this.dataset.url;
+                const item = this.closest('.notif-item');
+                
+                // Récupération token CSRF
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                            break;
+                        }
+                    }
+                }
+
+                // Animation immédiate
+                item.style.transition = "all 0.3s ease";
+                item.style.opacity = "0.3";
+                item.style.transform = "translateX(50px)";
+
+                // Envoi requête
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': cookieValue,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Suppression du DOM
+                        item.style.height = "0";
+                        item.style.padding = "0";
+                        item.style.margin = "0";
+                        item.style.border = "none";
+                        setTimeout(() => item.remove(), 300);
+                        
+                        // Mise à jour compteur badge
+                        const badge = document.getElementById('notif-badge');
+                        if(badge) {
+                            let count = parseInt(badge.innerText);
+                            if(count > 1) badge.innerText = count - 1;
+                            else {
+                                badge.remove();
+                                // Si plus rien, recharger ou cacher le bouton tout supprimer
+                                document.getElementById('form-delete-all')?.remove();
+                            }
+                        }
+                    } else {
+                        item.style.opacity = "1";
+                        item.style.transform = "none";
+                        alert("Erreur lors de la suppression");
+                    }
+                });
+            });
+        });
+
+        // --- 2. GESTION CONFIRMATION "TOUT EFFACER" ---
+        const btnDeleteAll = document.getElementById('btn-delete-all');
+        if (btnDeleteAll) {
+            btnDeleteAll.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent any default button behavior
+                Swal.fire({
+                    title: 'Tout vider ?',
+                    text: "Vous allez perdre l'historique de vos notifications.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Oui, tout supprimer',
+                    cancelButtonText: 'Annuler',
+                    // Style forcé pour compatibilité thèmes
+                    color: '#333', 
+                    background: '#fff',
+                    customClass: { popup: 'shadow-lg rounded-4' }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('form-delete-all').submit();
+                    }
+                });
+            });
+        }
+    }
+
+    // --- 3. TEXTE BOUTON "VOIR PLUS" ---
+    window.toggleNotifText = function(btn) {
+        const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+        if (isExpanded) {
+            btn.innerHTML = '<i class="fas fa-chevron-up me-1"></i> Masquer';
+        } else {
+            btn.innerHTML = '<i class="fas fa-chevron-down me-1"></i> Voir les anciennes notifications';
+        }
+    };
+
+    function initGridSystem() {
+        const gridContainer = document.querySelector('.iso-grid');
+        const scene = document.querySelector('.iso-scene');
+        const mapWidth = parseInt("{{ ville.largeur_map }}") || 10; // Valeur par défaut
+        const mapHeight = parseInt("{{ ville.hauteur_map }}") || 10;
+        
+        // 1. GÉNÉRATION DE LA GRILLE PHYSIQUE
+        if (gridContainer) {
+            gridContainer.innerHTML = ''; // Reset
+            
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    // On place la cellule via CSS (les variables calculeront les pixels)
+                    cell.style.left = `calc(var(--cell-size) * ${x})`;
+                    cell.style.top = `calc(var(--cell-size) * ${y})`;
+                    
+                    // On stocke les coordonnées pour le JS
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    // ÉVÉNEMENT : Quand la souris entre dans une case
+                    cell.addEventListener('mouseenter', (e) => {
+                        updateGhostPosition(x, y);
+                    });
+                    
+                    // CLIC : Validation du déplacement
+                    cell.addEventListener('click', (e) => {
+                        handleGridClick(x, y);
+                    });
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // 2. DÉTECTION DU MODE DÉPLACEMENT
+        const movingBatimentId = "{{ moving_batiment.id|default:'' }}";
+        if (movingBatimentId) {
+            scene.classList.add('moving-mode');
+            // On s'assure que le fantôme est visible
+            const ghost = document.querySelector('.iso-ghost');
+            if(ghost) ghost.classList.add('active');
+        }
+    }
+
+    function updateGhostPosition(x, y) {
+        const ghost = document.querySelector('.iso-ghost');
+        if (!ghost) return;
+
+        // Mise à jour visuelle (CSS gère le calcul px)
+        ghost.style.left = `calc(var(--cell-size) * ${x})`;
+        ghost.style.top = `calc(var(--cell-size) * ${y})`;
+        
+        // Stockage des coordonnées actuelles pour le lien de validation
+        ghost.dataset.currentX = x;
+        ghost.dataset.currentY = y;
+        
+        // (Optionnel) Ici tu pourrais ajouter une vérification de collision en JS
+        // pour changer la couleur du fantôme en rouge si la case est prise.
+    }
+
+    function handleGridClick(x, y) {
+        const ghost = document.querySelector('.iso-ghost');
+        // Si on est en mode déplacement, le clic sur la grille déclenche l'action
+        if (ghost && ghost.dataset.moveUrl) {
+            // On construit l'URL finale
+            // L'URL de base doit être stockée dans le dataset du ghost (voir HTML ci-dessous)
+            const baseUrl = ghost.dataset.moveUrl;
+            // On remplace les placeholders 999/888 par les vraies coordonnées
+            const finalUrl = baseUrl.replace('/999/', `/${x}/`).replace('/888/', `/${y}/`);
+            window.location.href = finalUrl;
+        }
+    }
+
+    function recenterMap() {
+        if(scene) {
+            scene.scrollTop = (scene.scrollHeight - scene.clientHeight) / 2;
+            scene.scrollLeft = (scene.scrollWidth - scene.clientWidth) / 2;
+        }
+    }
+    window.onload = function() { setTimeout(recenterMap, 100); };
+
+    if(scene) {
+        scene.addEventListener('mousedown', (e) => {
+            isDown = true;
+            scene.style.cursor = 'grabbing';
+            startX = e.pageX - scene.offsetLeft;
+            startY = e.pageY - scene.offsetTop;
+            scrollLeft = scene.scrollLeft;
+            scrollTop = scene.scrollTop;
+        });
+        scene.addEventListener('mouseleave', () => { isDown = false; scene.style.cursor = 'grab'; });
+        scene.addEventListener('mouseup', () => { isDown = false; scene.style.cursor = 'grab'; });
+        scene.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - scene.offsetLeft;
+            const y = e.pageY - scene.offsetTop;
+            const walkX = (x - startX) * 1.5; 
+            const walkY = (y - startY) * 1.5;
+            scene.scrollLeft = scrollLeft - walkX;
+            scene.scrollTop = scrollTop - walkY;
+        });
+    }
+
+    // 2. ZOOM
+    const slider = document.getElementById('zoomSlider');
+    const root = document.documentElement;
+    
+    function updateZoom() {
+        if(!slider) return;
+        const newSize = 60 * slider.value; 
+        root.style.setProperty('--cell-size', newSize + 'px');
+    }
+    if(slider) {
+        slider.addEventListener('input', updateZoom);
+        updateZoom();
+        localStorage.setItem('mapZoomLevel', slider.value);
+    }
+
+
+    // NOUVELLE FONCTION POUR CHARGER L'ÉTAT DU ZOOM
+function loadZoomState() {
+    const slider = document.getElementById('zoomSlider');
+    if (!slider) return;
+    
+    const savedZoom = localStorage.getItem('mapZoomLevel');
+    if (savedZoom) {
+        slider.value = savedZoom;
+        
+        // On appelle updateZoom pour appliquer immédiatement le style CSS
+        updateZoom(); 
+        
+        // BONUS : On fait un recentrage léger si le zoom change beaucoup
+        recenterMap(); 
+    }
+}
+    function manualZoom(direction) {
+        if (!slider) return;
+        if (direction > 0) slider.stepUp();
+        else slider.stepDown();
+        updateZoom();
+    }
+
+
+    // 4. MÉTÉO (AVEC FIX VOILE NUIT)
+    function updateEnvironment() {
+        const now = new Date();
+        const hour = now.getHours();
+        const decimalHour = hour + (now.getMinutes() / 60);
+
+        const options = { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const timeString = now.toLocaleDateString('fr-FR', options);
+        const clockEl = document.getElementById('live-clock');
+        if(clockEl) clockEl.innerText = timeString.charAt(0).toUpperCase() + timeString.slice(1);
+
+        const viewport = document.getElementById('city-viewport');
+        const scene = document.querySelector('.iso-scene');
+
+        if(viewport && scene) {
+            scene.classList.remove('sky-night', 'sky-dawn', 'sky-day', 'sky-dusk');
+            viewport.classList.remove('sky-night');
+
+            if (hour >= 6 && hour < 9) scene.classList.add('sky-dawn');
+            else if (hour >= 9 && hour < 18) scene.classList.add('sky-day');
+            else if (hour >= 18 && hour < 21) scene.classList.add('sky-dusk');
+            else {
+                scene.classList.add('sky-night');
+                viewport.classList.add('sky-night'); 
+            }
+        }
+
+        const sun = document.getElementById('the-sun');
+        const moon = document.getElementById('the-moon');
+
+        if (decimalHour >= 6 && decimalHour <= 20) {
+            const percentDay = (decimalHour - 6) / 14; 
+            const posX = 10 + (percentDay * 80);
+            const posY = 120 - (Math.sin(percentDay * Math.PI) * 100);
+            
+            if(sun) { sun.style.left = posX + '%'; sun.style.top = posY + '%'; sun.style.opacity = '1'; }
+            if(moon) { moon.style.top = '150%'; moon.style.opacity = '0'; }
+        } else {
+            let percentNight = (decimalHour > 20) ? (decimalHour - 20) / 10 : (decimalHour + 4) / 10;
+            const posX = 10 + (percentNight * 80);
+            const posY = 100 - (Math.sin(percentNight * Math.PI) * 80);
+
+            if(moon) { moon.style.left = posX + '%'; moon.style.top = posY + '%'; moon.style.opacity = '1'; }
+            if(sun) { sun.style.top = '150%'; sun.style.opacity = '0'; }
+        }
+    }
+    setInterval(updateEnvironment, 1000);
+    updateEnvironment();
+
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 1. Variables pour la carte (Tu les as déjà) */
+    :root {
+        --map-width: {{ ville.largeur_map }};  
+        --map-height: {{ ville.hauteur_map }}; 
+    }
+
+    /* 2. FIX POUR SWEETALERT (Tu l'as déjà) */
+    .swal2-container {
+        z-index: 10000 !important;
+    }
+
+    /* 3. --- LE FIX POUR TON TÉLÉPHONE --- */
+    /* On force ton téléphone d'origine à passer DEVANT tout le reste */
+    #phone-wrapper {
+        z-index: 99999 !important; 
+        display: block !important; /* Sécurité au cas où il serait caché */
+    }
+    
+    /* Assure que l'onglet cliquable est bien visible */
+    .phone-notch {
+        cursor: pointer;
+        z-index: 100000 !important;
+    }
+</style>
+{% endblock %}

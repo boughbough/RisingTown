@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titre }}{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} City<span class="fw-light">Manager</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-none d-md-block text-end">
+                    <div class="small fw-bold text-dark">{{ user.username }}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Maire</div>
+                </div>
+                
+                {% include 'fragments/theme_btn.html' %}
+
+                <a href="{% url 'gestion_citoyens' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-4 pb-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <div class="text-center mb-4">
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block text-primary mb-2">
+                    <i class="fas fa-user-edit fs-2"></i>
+                </div>
+                <h1 class="fw-bold h3 mb-0">{{ titre }}</h1>
+                <p class="text-muted">Édition des informations civiles.</p>
+            </div>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-uppercase text-muted">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i> {{ field.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted small">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-3 mt-4">
+                            <button type="submit" class="btn-soft btn-pay btn-lg">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                            <a href="{% url 'gestion_citoyens' %}" class="btn btn-outline-secondary btn-lg text-dark">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Script pour appliquer le style "Glass" aux champs générés par Django
+    document.addEventListener("DOMContentLoaded", function() {
+        // On cible tous les inputs sauf les checkbox/radio
+        const inputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), select, textarea');
+        
+        inputs.forEach(input => {
+            // On ajoute la classe Bootstrap de base + notre classe custom
+            input.classList.add('form-control', 'glass-input');
+        });
+
+        // Pour les checkbox (si y'en a), on met le style switch de Bootstrap
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(chk => {
+            chk.classList.add('form-check-input');
+            chk.parentElement.classList.add('form-check', 'form-switch', 'my-2');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% load humanize %}
+
+<div class="row g-4">
+    
+    <div class="col-lg-4">
+        <div class="card shadow-lg border-0 mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold text-dark mb-0">
+                    {% if batiment.type_batiment == 'IMMEUBLE' %}
+                        <i class="fas fa-building me-2 text-primary"></i> Résidence
+                    {% else %}
+                        <i class="fas fa-home me-2 text-success"></i> Foyer
+                    {% endif %}
+                </h5>
+                <p class="text-muted small">Espace de vie</p>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark">Loyer</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">
+                        {{ batiment.loyer }} € / mois
+                    </span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                    <span class="small text-muted text-uppercase fw-bold">Occupation</span>
+                    <span class="small fw-bold {% if batiment.places_disponibles == 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ batiment.locataires.count }} / {{ batiment.capacite }}
+                    </span>
+                </div>
+                
+                <div class="progress mb-4" style="height: 10px;">
+                    <div class="progress-bar {% if batiment.places_disponibles == 0 %}bg-danger{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {% widthratio batiment.locataires.count batiment.capacite 100 %}%">
+                    </div>
+                </div>
+
+                <div class="alert alert-light border shadow-sm small mb-4">
+                    <i class="fas fa-info-circle me-1 text-primary"></i>
+                    {% if batiment.places_disponibles > 0 %}
+                        Il reste <strong>{{ batiment.places_disponibles }}</strong> places libres.
+                    {% else %}
+                        Le logement est <strong>complet</strong>.
+                    {% endif %}
+                </div>
+
+                {% if request.user.profil_citoyen.lieu_vie != batiment and batiment.places_disponibles > 0 %}
+                    <form action="{% url 'emmenager' batiment.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary w-100 shadow-lg py-3 fw-bold"
+                                data-confirm="Signer le bail ? Le premier mois de loyer ({{ batiment.loyer }} €) sera débité immédiatement."
+                                data-title="Emménagement"
+                                data-type="primary">
+                            <i class="fas fa-key me-2"></i> Emménager ici
+                        </button>
+                    </form>
+                {% elif request.user.profil_citoyen.lieu_vie == batiment %}
+                    <button class="btn btn-success w-100 py-3 fw-bold disabled" style="opacity: 1;">
+                        <i class="fas fa-check-circle me-2"></i> Vous habitez ici
+                    </button>
+                {% else %}
+                    <button class="btn btn-light border w-100 py-3 text-muted disabled">
+                        <i class="fas fa-times-circle me-2"></i> Complet
+                    </button>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-dark text-white border-0 pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">Habitants</h5>
+                <span class="badge bg-secondary bg-opacity-25 border border-secondary">{{ batiment.locataires.count }}</span>
+            </div>
+            
+            <div class="card-body p-4 bg-light">
+                <div class="row g-3">
+                    {% for locataire in batiment.locataires.all %}
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                                <div class="position-absolute top-0 start-0 bottom-0" style="width: 4px; background-color: {% if locataire.bonheur > 70 %}#10b981{% elif locataire.bonheur > 30 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                                
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.1rem;">
+                                        {{ locataire.prenom|first }}{{ locataire.nom|first }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-dark lh-1">{{ locataire.prenom }} {{ locataire.nom }}</div>
+                                        <div class="small text-muted mt-1">
+                                            {{ locataire.age }} ans &bull; 
+                                            {% if locataire.lieu_travail %}
+                                                <i class="fas fa-briefcase text-primary" title="Travaille"></i>
+                                            {% else %}
+                                                <i class="fas fa-couch text-warning" title="Chômeur"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if is_manager %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                <li>
+                                                    <a href="{% url 'expulser_locataire' locataire.id %}" 
+                                                       class="dropdown-item text-danger"
+                                                       data-confirm="Expulser {{ locataire.prenom }} ? Il deviendra SDF."
+                                                       data-title="Expulsion"
+                                                       data-type="danger">
+                                                        <i class="fas fa-sign-out-alt me-2"></i> Expulser
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="{% url 'voir_casier' locataire.id %}" class="dropdown-item">
+                                                        <i class="fas fa-file-contract me-2 text-muted"></i> Voir dossier
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12 py-5 text-center text-muted">
+                            <i class="fas fa-box-open fs-1 mb-3 opacity-25"></i><br>
+                            Ce logement est vide.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

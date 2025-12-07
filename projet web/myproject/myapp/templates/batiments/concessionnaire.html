@@ -1,0 +1,102 @@
+{% load humanize %}
+
+<div class="row g-4 justify-content-center">
+    
+    {% if is_manager %}
+    <div class="col-12">
+        <div class="card shadow-lg border-0 mb-4 overflow-hidden position-relative">
+            
+            <div class="card-body p-4 d-flex justify-content-between align-items-center position-relative" style="z-index: 2;">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-1" style="letter-spacing: 1px;">Parc Automobile</h6>
+                    <div class="d-flex align-items-baseline gap-3">
+                        <div class="display-6 fw-bold text-primary">{{ taux_motorisation }}%</div>
+                        <div class="text-muted small">des citoyens sont motorisés</div>
+                    </div>
+                </div>
+                
+                <form action="{% url 'action_concessionnaire' batiment.id %}" method="post" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="pub">
+                    <button type="submit" class="btn btn-outline-primary fw-bold rounded-pill px-4"
+                            data-confirm="Lancer une campagne (200 €) ? Gain : 50 € par voiture en circulation."
+                            data-title="Marketing Auto"
+                            data-type="primary">
+                        <i class="fas fa-bullhorn me-2"></i> Campagne Pub (200 €)
+                    </button>
+                </form>
+            </div>
+
+            <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center p-3" style="z-index: 1; opacity: 0.05; right: -20px !important;">
+                <i class="fas fa-tachometer-alt" style="font-size: 8rem; color: var(--text-primary);"></i>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if request.user.profil_citoyen.vehicule %}
+        <div class="col-12">
+            <div class="alert alert-success border-0 shadow-sm d-flex align-items-center p-4 mb-4">
+                <div class="bg-white p-3 rounded-circle text-success me-4 shadow-sm">
+                    <i class="fas fa-car-side fs-2"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-1">Vous êtes motorisé</h5>
+                    <p class="mb-0 small opacity-75">
+                        Votre véhicule est stationné et opérationnel. Vous pouvez le changer en achetant un nouveau modèle ci-dessous.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+            <h4 class="fw-bold text-dark m-0"><i class="fas fa-tags me-2 text-primary"></i> Catalogue</h4>
+            <span class="badge bg-light text-muted border">4 modèles disponibles</span>
+        </div>
+        
+        <div class="row g-3">
+            {% for car in car_catalog %}
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100 shadow-lg border-0 transition-hover" style="border-radius: 16px;">
+                    <div class="card-header border-0 text-center py-4 bg-opacity-10 bg-{{ car.color }}" style="background-color: var(--bg-surface-alt);">
+                        <i class="fas {{ car.icon }} fa-4x text-{{ car.color }} drop-shadow-sm"></i>
+                    </div>
+                    
+                    <div class="card-body text-center p-4 d-flex flex-column">
+                        <h6 class="fw-bold text-dark mb-1">{{ car.nom }}</h6>
+                        <p class="text-muted small mb-3 flex-grow-1 lh-sm">{{ car.desc }}</p>
+                        
+                        <div class="mb-3">
+                            <span class="fs-4 fw-bold text-dark">{{ car.prix|intcomma }} €</span>
+                        </div>
+
+                        <form action="{% url 'action_concessionnaire' batiment.id %}" method="post" class="mt-auto">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="acheter">
+                            <input type="hidden" name="prix" value="{{ car.prix }}">
+                            <input type="hidden" name="modele" value="{{ car.nom }}">
+                            
+                            {% if request.user.profil_citoyen.argent >= car.prix %}
+                                <button type="submit" class="btn btn-soft w-100 fw-bold justify-content-center" 
+                                        style="background-color: var(--bg-surface-alt); color: var(--text-primary); border: 1px solid var(--border-color);"
+                                        data-confirm="Acheter la {{ car.nom }} pour {{ car.prix }} € ? {% if request.user.profil_citoyen.vehicule %}Cela remplacera votre véhicule actuel.{% endif %}"
+                                        data-title="Confirmation d'achat"
+                                        data-type="primary">
+                                    <span class="text-{{ car.color }}"><i class="fas fa-shopping-cart me-2"></i> Acheter</span>
+                                </button>
+                            {% else %}
+                                <button class="btn btn-light border w-100 text-muted small" disabled>
+                                    Pas assez d'argent
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>

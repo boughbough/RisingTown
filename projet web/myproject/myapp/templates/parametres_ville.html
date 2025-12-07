@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Administration de la Ville{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} City<span class="fw-light">Manager</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-none d-md-block text-end">
+                    <div class="small fw-bold text-dark">{{ user.username }}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Maire</div>
+                </div>
+                
+                {% include 'fragments/theme_btn.html' %}
+
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-4 pb-5 mt-5">
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 mb-4">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="text-center mb-5">
+        <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block text-primary mb-2">
+            <i class="fas fa-sliders-h fs-2"></i>
+        </div>
+        <h1 class="fw-bold display-6 mb-0">Paramètres de <span class="text-primary">{{ ville.nom }}</span></h1>
+        <p class="text-muted">Configuration urbanistique et données publiques.</p>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold text-primary mb-0"><i class="fas fa-map-marked-alt me-2"></i> Urbanisme & Identité</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="redimensionner">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Nom officiel</label>
+                            <input type="text" name="nom" class="form-control" value="{{ ville.nom }}" required>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Largeur (X)</label>
+                                <input type="number" name="largeur" class="form-control" 
+                                       value="{{ ville.largeur_map }}" min="10" max="100" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Profondeur (Y)</label>
+                                <input type="number" name="hauteur" class="form-control" 
+                                       value="{{ ville.hauteur_map }}" min="10" max="100" required>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn-soft btn-build w-100 justify-content-center">
+                                <i class="fas fa-save"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold text-success mb-0"><i class="fas fa-plus-circle me-2"></i> Ajouter une caractéristique</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Intitulé (Clé)</label>
+                            {{ info_form.nom_info }}
+                            <div class="form-text small">Ex: Code Postal, Région, Devise...</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Détail (Valeur)</label>
+                            {{ info_form.valeur_info }}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" name="add_info" class="btn-soft btn-pay w-100 justify-content-center">
+                                <i class="fas fa-plus"></i> Ajouter à la fiche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-lg border-0 mt-5">
+        <div class="card-header bg-white border-bottom p-4 d-flex align-items-center">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-list-ul me-2"></i> Fiche Technique Publique</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for info in ville.informations.all %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom-0 border-top">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-dark me-3">{{ info.nom_info }}</span>
+                            <span class="text-muted border-start ps-3">{{ info.valeur_info }}</span>
+                        </div>
+                        
+                        <a href="{% url 'supprimer_info' info.id %}" 
+                           class="btn btn-sm btn-light border text-danger" 
+                           title="Supprimer cette ligne" 
+                           onclick="return confirm('Voulez-vous vraiment supprimer cette information ?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-5 text-muted opacity-50">
+                        <i class="fas fa-clipboard-list fs-1 mb-3"></i><br>
+                        Aucune information complémentaire définie pour le moment.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Script magique pour styliser les champs Django bruts
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), select, textarea');
+        inputs.forEach(input => {
+            input.classList.add('form-control', 'glass-input');
+        });
+    });
+</script>
+{% endblock %}

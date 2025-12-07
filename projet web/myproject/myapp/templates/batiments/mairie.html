@@ -1,0 +1,277 @@
+{% load humanize %}
+
+{% if request.user.is_superuser or request.user.is_adjoint %}
+
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-coins me-2 text-warning"></i> Trésor Public</h5>
+            <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill border border-warning border-opacity-25">Zone Fiscale</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h6 class="fw-bold text-muted text-uppercase small">Budget de la Ville</h6>
+                    <div class="display-6 fw-bold text-dark mb-1">{{ batiment.ville.budget|intcomma }} €</div>
+                    <p class="text-muted small mb-0">Fonds disponibles pour la construction et les salaires.</p>
+                </div>
+                <div class="col-md-5 text-end">
+                    {% if request.user.is_superuser %}
+                        <form action="{% url 'collecter_impots' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-soft btn-tax w-100 py-3"
+                                    data-confirm="Prélever 10% sur tous les citoyens ? Cela baissera leur bonheur."
+                                    data-title="Collecte des Impôts"
+                                    data-type="warning">
+                                <i class="fas fa-hand-holding-usd fa-lg mb-1 d-block"></i>
+                                Collecter Impôts
+                            </button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-light w-100 py-3 text-muted border" disabled>
+                            <i class="fas fa-lock mb-1 d-block"></i> Réservé au Maire
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-briefcase me-2 text-primary"></i> Bureau du Maire</h5>
+            {% if doleances.count > 0 %}
+                <span class="badge bg-danger rounded-pill">{{ doleances.count }} message(s)</span>
+            {% endif %}
+        </div>
+        
+        <div class="card-body p-4">
+            
+            <ul class="nav nav-pills nav-fill mb-4 gap-2 p-1 bg-light rounded-pill border" id="mairie-tabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill fw-bold small" data-bs-toggle="pill" data-bs-target="#tab-journal">
+                        <i class="fas fa-bullhorn me-2"></i> Journal Officiel
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill fw-bold small position-relative" data-bs-toggle="pill" data-bs-target="#tab-doleances">
+                        <i class="fas fa-inbox me-2"></i> Doléances
+                        {% if doleances.count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                        {% endif %}
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                
+                <div class="tab-pane fade show active" id="tab-journal">
+                    <form action="{% url 'publier_news_ville' %}" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Titre de l'annonce</label>
+                            <input type="text" name="titre" class="form-control glass-input" placeholder="Ex: Grande fête ce soir !" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Contenu</label>
+                            <textarea name="contenu" class="form-control glass-input" rows="2" placeholder="Message à tous les citoyens..." required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-soft btn-build px-4">
+                                <i class="fas fa-paper-plane me-2"></i> Publier
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="tab-doleances">
+                    {% if doleances %}
+                        <div class="list-group list-group-flush">
+                            {% for dol in doleances %}
+                                <div class="list-group-item p-3 border rounded mb-2 bg-light">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                {{ dol.citoyen.prenom|first }}{{ dol.citoyen.nom|first }}
+                                            </div>
+                                            <div>
+                                                <strong class="text-dark">{{ dol.citoyen.prenom }} {{ dol.citoyen.nom }}</strong>
+                                                <span class="text-muted small ms-1">- {{ dol.date_creation|date:"d M H:i" }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <a href="{% url 'supprimer_notification' dol.id %}" 
+                                           class="btn btn-sm btn-outline-secondary border-0" 
+                                           title="Archiver / Supprimer">
+                                            <i class="fas fa-check"></i> Traité
+                                        </a>
+                                    </div>
+                                    <div class="bg-white p-2 rounded border-start border-4 border-primary small text-muted fst-italic">
+                                        "{{ dol.message }}"
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted opacity-50">
+                            <i class="fas fa-check-circle fs-1 mb-2"></i><br>
+                            Aucune doléance. Les citoyens sont heureux !
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% if request.user.is_superuser %}
+    <div class="row g-3">
+        <div class="col-6">
+            <a href="{% url 'gestion_citoyens' %}" class="card shadow-sm border-0 bg-primary text-white text-decoration-none h-100 card-hover-effect">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-users-cog fa-2x mb-2 opacity-75"></i>
+                    <h6 class="fw-bold mb-0">Gérer Citoyens</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{% url 'parametres_ville' %}" class="card shadow-sm border-0 bg-dark text-white text-decoration-none h-100 card-hover-effect">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-cogs fa-2x mb-2 opacity-75"></i>
+                    <h6 class="fw-bold mb-0">Paramètres Ville</h6>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+
+{% else %}
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-info-circle me-2 text-info"></i> Hall d'Accueil</h5>
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill border border-info border-opacity-25">Information</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 border h-100">
+                                <div class="text-muted text-uppercase fw-bold small mb-1">Population</div>
+                                <div class="fs-4 fw-bold text-dark">{{ batiment.ville.population_totale }}</div>
+                                <div class="small text-muted">Habitants</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 border h-100">
+                                <div class="text-muted text-uppercase fw-bold small mb-1">Maire Actuel</div>
+                                <div class="fs-4 fw-bold text-primary">
+                                    {{ nom_maire }}
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    <i class="fas fa-user-shield me-1 text-secondary"></i> Adjoint : <strong>{{ nom_adjoint }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-concierge-bell me-2 text-primary"></i> Services Administratifs</h5>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <ul class="nav nav-pills nav-fill mb-4 gap-2 p-1 bg-light rounded-pill border" id="admin-pills-tab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active rounded-pill fw-bold small" data-bs-toggle="pill" data-bs-target="#tab-doleance">
+                                <i class="fas fa-envelope-open-text me-2"></i> Doléances
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill fw-bold small" data-bs-toggle="pill" data-bs-target="#tab-aide">
+                                <i class="fas fa-hands-helping me-2"></i> Aide Sociale
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-doleance">
+                            <form action="{% url 'mairie_doleance' %}" method="post">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Votre message au Maire</label>
+                                    <textarea name="message" class="form-control glass-input" rows="3" placeholder="Suggestion, plainte, signalement..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
+                                    <i class="fas fa-paper-plane me-2"></i> Transmettre
+                                </button>
+                                <div class="form-text text-center small mt-2">Votre message sera lu personnellement par le Maire.</div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-aide">
+                            <div class="text-center py-3">
+                                <div class="mb-3">
+                                    <i class="fas fa-hand-holding-heart fa-3x text-warning opacity-75"></i>
+                                </div>
+                                <h6 class="fw-bold">Fonds de Solidarité</h6>
+                                <p class="small text-muted mb-4">
+                                    Une aide d'urgence de <strong>200 €</strong> est disponible pour les citoyens en grande difficulté financière (moins de 50 € en poche).
+                                </p>
+                                
+                                {% if request.user.profil_citoyen.argent < 50 %}
+                                    <form action="{% url 'mairie_aide_sociale' %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm"
+                                                data-confirm="Demander l'aide sociale ?"
+                                                data-title="Solidarité"
+                                                data-type="success">
+                                            <i class="fas fa-check me-2"></i> Demander l'aide (Éligible)
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button class="btn btn-light border w-100 text-muted" disabled>
+                                        <i class="fas fa-times me-2"></i> Non éligible (Ressources suffisantes)
+                                    </button>
+                                    <div class="form-text text-center small mt-2">Vous devez avoir moins de 50 € pour être éligible.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-lg border-0 mb-4 h-100">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-newspaper me-2 text-primary"></i> Affichage Officiel</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for news in batiment.ville.actualites.all|slice:":5" %}
+                        <div class="list-group-item p-3 border-bottom-0 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Officiel</span>
+                                <small class="text-muted">{{ news.date_creation|date:"d M" }}</small>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">{{ news.titre }}</h6>
+                            <p class="text-muted small mb-0">{{ news.contenu }}</p>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted opacity-50">
+                            <i class="far fa-newspaper fs-1 mb-2"></i><br>
+                            Aucune annonce officielle.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endif %}

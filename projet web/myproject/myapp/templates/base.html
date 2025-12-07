@@ -1,0 +1,302 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart City Manager{% endblock %}</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> 
+
+    <script>
+        const savedTheme = localStorage.getItem('site_theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+    </script>
+    
+    <style>
+        /* ====================================================== */
+        /* STYLE TÉLÉPHONE "TIROIR" (SOLID & CLEAN)              */
+        /* ====================================================== */
+        #phone-drawer {
+            position: fixed;
+            bottom: 0;
+            right: 30px; 
+            width: 360px;
+            z-index: 2147483647 !important; /* Superposition Max */
+            
+            /* Position par défaut : baissé (seul le header dépasse) */
+            transform: translateY(calc(100% - 50px)); 
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* Quand ouvert : on remonte tout à 0 */
+        #phone-drawer.open {
+            transform: translateY(0);
+        }
+
+        /* 1. L'ONGLET (HEADER) */
+        .phone-header {
+            height: 50px;
+            background: #1a1d20; 
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-weight: 600;
+            user-select: none;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .phone-header:hover {
+            background: #25282c;
+        }
+
+        /* 2. L'ÉCRAN (IFRAME) */
+        .phone-body {
+            height: 550px; /* Hauteur fixe */
+            background: white;
+            position: relative;
+        }
+
+        .phone-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* INDICATEURS */
+        .phone-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notif-badge {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        /* SweetAlert Fix */
+        .swal2-container { z-index: 10600 !important; }
+    </style>
+</head>
+<body>
+    {% block navbar %}{% endblock %}
+
+    <div style="height: 80px;"></div>
+
+    {% block content %}
+    {% endblock %}
+
+    <div id="page-loader">
+        <div class="loader-content">
+            {% load static %}
+            <img src="{% static 'img/logo.png' %}" alt="Chargement..." class="loader-logo" onerror="this.style.display='none'">
+            <div class="loader-text mt-3">Chargement...</div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true" style="z-index: 10600;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3">
+                        <div id="confIcon" class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 70px; height: 70px; font-size: 2rem;">
+                            <i class="fas fa-question"></i>
+                        </div>
+                    </div>
+                    <h4 class="fw-bold mb-2" id="confTitle">Êtes-vous sûr ?</h4>
+                    <p class="text-muted mb-4" id="confMessage">Cette action est irréversible.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light border px-4 rounded-pill fw-bold" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" id="btnConfirmAction" class="btn btn-primary px-4 rounded-pill fw-bold">Confirmer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="phone-drawer">
+        <div class="phone-header" id="btn-toggle-phone">
+            <div class="phone-indicator">
+                <i class="fas fa-comment-dots text-primary"></i>
+                <span>Messagerie</span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                {% if nb_sms_non_lus > 0 %}
+                    <span class="notif-badge" id="phone-badge">{{ nb_sms_non_lus }}</span>
+                {% endif %}
+                <i class="fas fa-chevron-up transition-icon" id="drawer-icon"></i>
+            </div>
+        </div>
+
+        <div class="phone-body">
+            <iframe src="" name="phoneFrame" class="phone-iframe" id="phoneScreen"></iframe>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+         
+         // ============================================================
+         // 1. GESTION DU THÈME
+         // ============================================================
+         const themeBtn = document.getElementById('theme-toggle');
+         const html = document.documentElement;
+
+         if (themeBtn) {
+             themeBtn.addEventListener('click', function(e) {
+                 e.preventDefault();
+                 const currentTheme = html.getAttribute('data-theme');
+                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                 html.setAttribute('data-theme', newTheme);
+                 localStorage.setItem('site_theme', newTheme);
+             });
+         }
+
+         // ============================================================
+         // 2. GESTION DU TÉLÉPHONE & NOTIFICATIONS LIVE
+         // ============================================================
+         const phoneHeader = document.getElementById('btn-toggle-phone');
+         const phoneDrawer = document.getElementById('phone-drawer');
+         const drawerIcon = document.getElementById('drawer-icon');
+         const phoneScreen = document.getElementById('phoneScreen');
+         const phoneBadge = document.getElementById('phone-badge'); // Le chiffre
+         const notifDot = document.querySelector('.notification-dot'); // Le point rouge
+
+         // --- FONCTIONS D'AFFICHAGE DU BADGE ---
+         function showBadges(count) {
+             // Si le téléphone est déjà ouvert, on n'allume pas le rouge
+             if(phoneDrawer.classList.contains('open')) return;
+
+             // 1. Le petit point rouge
+             if(notifDot) notifDot.style.display = 'block';
+             
+             // 2. Le chiffre dans le header
+             if(phoneBadge) {
+                 phoneBadge.innerText = count;
+                 phoneBadge.style.display = 'inline-block'; // ou 'flex' selon ton CSS
+             }
+         }
+
+         function hideBadges() {
+             if(notifDot) notifDot.style.display = 'none';
+             if(phoneBadge) phoneBadge.style.display = 'none';
+         }
+
+         // --- INTERACTION CLIC ---
+         if(phoneHeader && phoneDrawer) {
+            phoneHeader.addEventListener('click', function() {
+                // On bascule la classe 'open'
+                const isOpen = phoneDrawer.classList.toggle('open');
+                
+                // Rotation de l'icône flèche
+                if(isOpen) {
+                    drawerIcon.className = 'fas fa-chevron-down';
+                    
+                    // Chargement Lazy Load (Correction appliquée ici : /phone/)
+                    if (phoneScreen.getAttribute('src') === "") {
+                         phoneScreen.setAttribute('src', "/phone/"); 
+                    }
+                    
+                    // On cache les notifications visuelles quand on ouvre
+                    hideBadges();
+                    
+                } else {
+                    drawerIcon.className = 'fas fa-chevron-up';
+                }
+            });
+         }
+
+         // --- SURVEILLANCE LIVE (POLLING) ---
+         // Vérifie les nouveaux messages toutes les 4 secondes
+         setInterval(() => {
+            fetch("{% url 'api_check_unread' %}")
+            .then(res => res.json())
+            .then(data => {
+                if (data.count > 0) {
+                    showBadges(data.count);
+                } else {
+                    hideBadges(); // Si lus ailleurs
+                }
+            })
+            .catch(err => console.error("Erreur check notif", err));
+         }, 4000);
+
+
+         // ============================================================
+         // 3. SYSTÈME DE CONFIRMATION (MODALE)
+         // ============================================================
+         const modalElement = document.getElementById('confirmationModal');
+         if (modalElement) {
+            const myModal = new bootstrap.Modal(modalElement);
+            const btnConfirm = document.getElementById('btnConfirmAction');
+            let targetElement = null;
+
+            document.body.addEventListener('click', function(e) {
+                const trigger = e.target.closest('[data-confirm]');
+                if (!trigger) return;
+                e.preventDefault(); 
+                targetElement = trigger; 
+
+                document.getElementById('confTitle').textContent = trigger.dataset.title || "Confirmation";
+                document.getElementById('confMessage').textContent = trigger.dataset.confirm || "Confirmer ?";
+                
+                const type = trigger.dataset.type || "primary";
+                btnConfirm.className = `btn btn-${type} px-4 rounded-pill fw-bold`;
+                
+                const iconBox = document.getElementById('confIcon');
+                iconBox.className = `rounded-circle d-inline-flex align-items-center justify-content-center bg-${type} bg-opacity-10 text-${type}`;
+                const iconI = iconBox.querySelector('i');
+                if (type === 'danger') iconI.className = "fas fa-exclamation-triangle";
+                else if (type === 'warning') iconI.className = "fas fa-question";
+                else iconI.className = "fas fa-info";
+
+                myModal.show();
+            });
+
+            btnConfirm.addEventListener('click', function() {
+                if (targetElement) {
+                    if (targetElement.tagName === 'A') window.location.href = targetElement.href;
+                    else if (targetElement.type === 'submit' || targetElement.tagName === 'BUTTON') {
+                        const form = targetElement.closest('form');
+                        if (form) form.submit();
+                    }
+                    myModal.hide();
+                }
+            });
+         }
+    });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+</body>
+</html>

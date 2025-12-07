@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ batiment.nom }} - Détails{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} City<span class="fw-light">Manager</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                {% include 'fragments/theme_btn.html' %}
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-4 pb-5 mt-5">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 mb-4">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-lg border-0 mb-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <div class="col-md-4 bg-light d-flex align-items-center justify-content-center position-relative p-5" style="min-height: 250px;">
+                    <div class="position-absolute w-100 h-100" style="background: radial-gradient(circle at center, rgba(79, 70, 229, 0.1) 0%, transparent 70%);"></div>
+                    <img src="{% static 'img/'|add:batiment.type_batiment|lower|add:'.png' %}" 
+                         alt="{{ batiment.nom }}" 
+                         class="img-fluid position-relative z-1" 
+                         style="max-height: 180px; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2)); transition: transform 0.3s ease;">
+                </div>
+                
+                <div class="col-md-8 p-4 p-lg-5">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+    <h6 class="text-uppercase text-muted small fw-bold tracking-wide mb-1">{{ batiment.get_type_batiment_display }}</h6>
+    
+    <div class="d-flex align-items-center gap-3">
+        <h1 class="display-5 fw-bold mb-0">{{ batiment.nom }}</h1>
+        
+        {% if request.user.is_superuser or request.user == batiment.responsable %}
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle border-0" 
+                    data-bs-toggle="modal" data-bs-target="#renameModal" 
+                    title="Renommer le bâtiment">
+                <i class="fas fa-pen"></i>
+            </button>
+        {% endif %}
+    </div>
+</div>
+                        
+                        {% if is_manager %}
+                            <div class="text-end">
+                                <span class="badge {% if batiment.etat > 50 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="fas fa-hammer me-1"></i> État : {{ batiment.etat }}%
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        {% if batiment.est_logement %}
+                            <span class="badge bg-secondary bg-opacity-10 text-dark border">Logement</span> Propriété de la Ville
+                        {% else %}
+                            Direction : 
+                            {% if batiment.responsable %}
+                                <strong class="text-primary">@{{ batiment.responsable.username }}</strong>
+                            {% else %}
+                                <span class="fst-italic text-secondary">Poste vacant (Géré par la Mairie)</span>
+                            {% endif %}
+                        {% endif %}
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        
+                        {% if is_manager %}
+                            
+                            {% if not batiment.est_logement %}
+                                <button type="button" class="btn btn-soft btn-white" data-bs-toggle="modal" data-bs-target="#modalRecrutement">
+                                    <i class="fas fa-user-plus text-primary"></i> Recruter
+                                </button>
+                            {% endif %}
+                            
+                            <a href="{% url 'reparer_batiment' batiment.id %}" 
+   class="btn btn-soft btn-white" 
+   data-confirm="Lancer les réparations pour {% widthratio batiment.cout_construction 10 1 %} € ?"
+   data-title="Maintenance"
+   data-type="warning">
+    <i class="fas fa-tools text-warning"></i> Réparer
+</a>
+                            
+                            {% if request.user.is_superuser %}
+                                
+                                <a href="{% url 'dashboard' %}?move_id={{ batiment.id }}" 
+                                   class="btn btn-soft btn-white text-info"
+                                   data-confirm="Retourner sur la carte pour déplacer ce bâtiment ?"
+                                   data-title="Déplacement"
+                                   data-type="primary">
+                                    <i class="fas fa-arrows-alt"></i> Déplacer
+                                </a>
+
+                                <a href="{% url 'detruire_batiment' batiment.id %}" 
+                                   class="btn btn-soft btn-white text-danger" 
+                                   data-confirm="ATTENTION : Action irréversible. Le bâtiment sera détruit."
+                                   data-title="Démolition"
+                                   data-type="danger">
+                                    <i class="fas fa-bomb"></i> Détruire
+                                </a>
+                            {% endif %}
+
+                        {% endif %}
+
+                        {% if request.user.profil_citoyen.lieu_travail == batiment and not is_manager %}
+                            <form action="{% url 'demissionner' %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-soft btn-white text-danger border-danger"
+                                        data-confirm="Voulez-vous vraiment démissionner ?"
+                                        data-title="Démission"
+                                        data-type="danger">
+                                    <i class="fas fa-door-open"></i> Démissionner
+                                </button>
+                            </form>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        
+        {% if batiment.est_logement %}
+            <div class="col-lg-10">
+                {% include 'batiments/habitation.html' %}
+            </div>
+
+        {% else %}
+            
+            <div class="col-lg-7">
+                {% if can_see_staff %} 
+<div class="card mb-4 shadow-sm border-warning">
+    <div class="card-header bg-warning bg-opacity-10 text-dark fw-bold d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-bullhorn me-2"></i> Communication Interne</span>
+        <span class="badge bg-warning text-dark">Personnel Uniquement</span>
+    </div>
+    
+    <div class="card-body">
+        
+        {% if is_manager %}
+            <div class="bg-light p-3 rounded mb-3 border">
+                <h6 class="fw-bold mb-2"><i class="fas fa-pen"></i> Publier une consigne</h6>
+                <form action="{% url 'publier_actualite' batiment.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <input type="text" name="titre" class="form-control form-control-sm" placeholder="Titre de la note..." required>
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="contenu" class="form-control form-control-sm" rows="2" placeholder="Message à l'équipe..." required></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-sm btn-dark">Afficher sur le tableau</button>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+
+        <div class="list-group list-group-flush">
+            {% for note in notes_service %}
+                <div class="list-group-item px-0 py-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1 fw-bold">{{ note.titre }}</h6>
+                            <p class="mb-1 small text-muted">{{ note.contenu|linebreaksbr }}</p>
+                            <small class="text-secondary" style="font-size: 0.75rem;">
+                                Par <strong>{{ note.auteur.username }}</strong> • {{ note.date_creation|date:"d/m H:i" }}
+                            </small>
+                        </div>
+                        
+                        {% if is_manager %}
+                            <form action="{% url 'supprimer_actualite' note.id %}" method="post" onsubmit="return confirm('Effacer cette note ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger p-0 ms-2">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center text-muted py-3 small fst-italic">
+                    <i class="far fa-clipboard me-2"></i>Aucune note de service affichée.
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endif %}
+                
+                {% if is_manager and candidatures_recues %}
+                <div class="card shadow-lg border-0 mb-4 border-start border-4 border-warning">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between">
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-file-contract me-2 text-warning"></i> Candidatures</h5>
+                        <span class="badge bg-warning text-dark">{{ candidatures_recues.count }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for cand in candidatures_recues %}
+                                <div class="list-group-item p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-light border me-2 d-flex align-items-center justify-content-center" style="width:35px; height:35px;">
+                                                {{ cand.citoyen.prenom|first }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ cand.citoyen.prenom }} {{ cand.citoyen.nom }}</strong>
+                                                <div class="small text-muted">{{ cand.citoyen.age }} ans</div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ cand.date_creation|date:"d M" }}</small>
+                                    </div>
+                                    {% if cand.message %}
+                                        <div class="bg-light p-2 rounded small text-muted fst-italic mb-2">"{{ cand.message }}"</div>
+                                    {% endif %}
+                                    <div class="d-flex gap-2">
+                                        <a href="{% url 'traiter_candidature' cand.id 'accepter' %}" class="btn btn-sm btn-success flex-fill" 
+                                           data-confirm="Embaucher ce citoyen ?" data-type="success">Accepter</a>
+                                        <a href="{% url 'traiter_candidature' cand.id 'refuser' %}" class="btn btn-sm btn-outline-danger flex-fill" 
+                                           data-confirm="Refuser la candidature ?" data-type="danger">Refuser</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if batiment.type_batiment == 'MAIRIE' %}
+                    {% include 'batiments/mairie.html' %}
+                
+                {% elif batiment.type_batiment == 'BANQUE' %}
+                    {% include 'batiments/banque.html' %}
+
+                {% elif batiment.type_batiment == 'COMMISSARIAT' %}
+                    {% include 'batiments/commissariat.html' %}
+
+                {% elif batiment.type_batiment == 'PRISON' %}
+                    {% include 'batiments/prison_admin.html' %}
+
+                {% elif batiment.type_batiment == 'HOPITAL' %}
+                    {% include 'batiments/hopital.html' %}
+
+                {% elif batiment.type_batiment == 'ECOLE' %}
+                    {% include 'batiments/ecole.html' %}
+
+                {% elif batiment.type_batiment == 'COMMERCE' %}
+                    {% include 'batiments/commerce.html' %}
+                    
+                {% elif batiment.type_batiment == 'USINE' %}
+                    {% include 'batiments/usine.html' %}
+
+                {% elif batiment.type_batiment == 'CENTRALE' %}
+                    {% include 'batiments/centrale.html' %}
+
+                {% elif batiment.type_batiment == 'CONCESSIONNAIRE' %}
+                    {% include 'batiments/concessionnaire.html' %}
+
+                {% elif batiment.type_batiment == 'PARKING' %}
+                    {% include 'batiments/parking.html' %}
+                
+                {% else %}
+                    {% include 'batiments/default.html' %}
+                {% endif %}
+            </div>
+
+            {% if can_see_staff %}
+<div class="col-lg-5">
+    
+    <div class="card shadow-sm border-0 mb-4 bg-primary text-white overflow-hidden position-relative">
+        <div class="position-absolute top-0 end-0 p-3 opacity-25">
+            <i class="fas fa-id-badge fa-5x" style="transform: rotate(-15deg);"></i>
+        </div>
+        <div class="card-body p-4 position-relative z-1">
+            <h6 class="text-uppercase fw-bold opacity-75 mb-2">Effectifs Actuels</h6>
+            <div class="display-4 fw-bold mb-0">{{ employes.count }}</div>
+            <div class="small mt-2 opacity-75">Citoyens travaillant ici</div>
+        </div>
+    </div>
+    
+    <div class="card shadow-lg border-0" style="overflow: visible;">
+        <div class="card-header bg-white border-bottom p-4">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-users me-2 text-primary"></i> Équipe en poste</h5>
+        </div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                {% for employe in employes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom-0 border-top">
+                        
+                        <div class="d-flex align-items-center">
+                            {% if batiment.responsable == employe.compte %}
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm bg-warning text-dark border border-warning" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold d-flex align-items-center">
+                                        {{ employe.prenom }} {{ employe.nom }}
+                                        <span class="badge bg-warning text-dark ms-2" style="font-size: 0.65rem;">DIRECTEUR</span>
+                                    </div>
+                                    <small class="text-muted">Responsable (@{{ employe.compte.username }})</small>
+                                </div>
+                            {% else %}
+                                <div class="rounded-circle bg-light text-dark fw-bold d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    {{ employe.prenom|first }}{{ employe.nom|first }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ employe.prenom }} {{ employe.nom }}</div>
+                                    <small class="text-muted">Employé (@{{ employe.compte.username }})</small>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if is_manager %}
+                            {% if request.user != employe.compte %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light border" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                        <li><h6 class="dropdown-header">Gestion RH</h6></li>
+                                        
+                                        {% if request.user.is_superuser or request.user.is_adjoint %}
+                                            {% if batiment.responsable == employe.compte %}
+                                                <li>
+                                                    <form action="{% url 'revocquer_directeur' batiment.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item text-warning" onclick="return confirm('Rétrograder ce directeur ?')">
+                                                            <i class="fas fa-user-slash me-2"></i> Révoquer Directeur
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% else %}
+                                                <li>
+                                                    <form action="{% url 'nommer_directeur' batiment.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="citoyen_id" value="{{ employe.id }}">
+                                                        <button type="submit" class="dropdown-item text-primary" onclick="return confirm('Nommer ce citoyen Directeur ?')">
+                                                            <i class="fas fa-crown me-2"></i> Nommer Directeur
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        
+                                        {% if batiment.responsable != employe.compte or request.user.is_superuser or request.user.is_adjoint %}
+                                            <li>
+                                                <form action="{% url 'licencier' employe.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="message" value="Licenciement par la direction.">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Licencier cet employé ?')">
+                                                        <i class="fas fa-door-open me-2"></i> Licencier
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-center py-5 text-muted">
+                        <i class="fas fa-wind fs-1 mb-2 opacity-25"></i><br>Aucun employé.
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>  
+</div>
+{% endif %}
+            
+
+        {% endif %} </div>
+</div>
+
+{% if is_manager and not batiment.est_logement %}
+<div class="modal fade" id="modalRecrutement" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Recruter un citoyen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'proposer_poste' batiment.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Candidat (Chômeurs)</label>
+                        <select name="citoyen_id" class="form-select">
+                            {% for chomeur in chomeurs %}
+                                <option value="{{ chomeur.id }}">{{ chomeur.prenom }} {{ chomeur.nom }} ({{ chomeur.age }} ans)</option>
+                            {% empty %}
+                                <option disabled>Aucun chômeur disponible</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message d'embauche</label>
+                        <textarea name="message" class="form-control" rows="2" placeholder="Nous avons besoin de vos talents..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" 
+                            data-confirm="Envoyer cette offre ?" 
+                            data-type="primary">
+                        Envoyer l'offre
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Helper Banque (Seul script nécessaire ici)
+    function setMaxInput(btn, value) {
+        const input = btn.closest('.input-group').querySelector('input');
+        input.value = value;
+    }
+</script>
+<div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Renommer la structure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'renommer_batiment' batiment.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Nouveau nom</label>
+                        <input type="text" name="nom" class="form-control form-control-lg fw-bold" value="{{ batiment.nom }}" required maxlength="50">
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

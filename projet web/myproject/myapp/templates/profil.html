@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Profil{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} City<span class="fw-light">Manager</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-2">
+                {% include 'fragments/theme_btn.html' %}
+                
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-2">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 700px;">
+    
+    <div class="text-center mb-5">
+        <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block text-primary mb-3">
+            <i class="fas fa-user-circle fs-1"></i>
+        </div>
+        <h1 class="fw-bold">Mon Profil</h1>
+        <p class="text-muted">Gérez vos informations personnelles</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 mb-4">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-lg border-0 mb-5">
+        <div class="card-header bg-white border-bottom p-4">
+            <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-pen me-2"></i> Modifier mes informations</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Prénom</label>
+                        {{ form.prenom }}
+                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Nom</label>
+                        {{ form.nom }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Âge</label>
+                    {{ form.age }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Adresse Email</label>
+                    {{ form.email }}
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="fas fa-save me-2"></i> Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card border-danger border-opacity-25 shadow-sm mb-5">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="text-danger me-3 fs-3"><i class="fas fa-shield-alt"></i></div>
+                <div>
+                    <h5 class="card-title text-danger mb-1 fw-bold">Sécurité</h5>
+                    <p class="card-text text-muted small mb-0">Modifier votre mot de passe nécessitera une reconnexion.</p>
+                </div>
+            </div>
+            <a href="{% url 'password_change' %}" class="btn btn-outline-danger w-100">
+                Changer de mot de passe
+            </a>
+        </div>
+    </div>
+    
+    <div class="text-center mb-5 opacity-50">
+        <small>Identifiant de connexion : <strong>{{ user.username }}</strong></small>
+    </div>
+
+</div>
+{% endblock %}

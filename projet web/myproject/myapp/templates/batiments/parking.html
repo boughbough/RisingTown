@@ -1,0 +1,81 @@
+{% load humanize %}
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-12">
+        
+        <div class="card shadow-lg border-0 mb-4 border-top border-4 border-secondary bg-dark text-white">
+            <div class="card-header bg-transparent border-white border-opacity-10 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-white"><i class="fas fa-parking me-2 text-secondary"></i> Indigo Park</h5>
+                
+                <span class="badge bg-secondary text-white border border-light">
+                    Tarif : {{ batiment.production_argent }} € / jour
+                </span>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row g-4 justify-content-center">
+                    
+                    {% if is_manager %}
+                        <div class="col-md-8">
+                            <div class="p-4 border border-secondary rounded-3 bg-light h-100 text-center">
+                                
+                                <h6 class="fw-bold text-dark mb-3">Politique Tarifaire</h6>
+                                
+                                <p class="text-muted small mb-4">Fixez le prix du stationnement prélevé chaque jour aux automobilistes.</p>
+                                
+                                <form action="{% url 'action_parking' batiment.id %}" method="post" class="d-flex align-items-center justify-content-center gap-2">
+                                    {% csrf_token %}
+                                    <div class="input-group" style="max-width: 200px;">
+                                        <span class="input-group-text bg-secondary border-secondary text-white"><i class="fas fa-euro-sign"></i></span>
+                                        <input type="number" name="tarif" class="form-control" 
+                                               value="{{ batiment.production_argent }}" min="0" max="100" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-secondary fw-bold shadow-sm">
+                                        Appliquer
+                                    </button>
+                                </form>
+                                
+                                <div class="small text-muted mt-3">
+                                    <i class="fas fa-calculator me-1"></i> Revenu estimé : 
+                                    <strong>{{ nb_voitures }} voitures x {{ batiment.production_argent }} €</strong>
+                                </div>
+                            </div>
+                        </div>
+                    
+                    {% elif request.user.profil_citoyen.vehicule %}
+                        <div class="col-md-8">
+                            <div class="p-4 border border-success rounded-3 bg-success bg-opacity-10 h-100 text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-check-circle fa-3x text-success"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark">Stationnement Actif</h6>
+                                <p class="small text-muted mb-0">
+                                    Votre véhicule est en sécurité.<br>
+                                    Le montant de <strong>{{ batiment.production_argent }} €</strong> sera débité automatiquement chaque jour.
+                                </p>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="col-md-8">
+                            <div class="p-4 border border-secondary rounded-3 bg-light h-100 text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-walking fa-3x text-secondary opacity-50"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark">Zone Abonné</h6>
+                                <p class="small text-muted mb-3">
+                                    Ce parking est réservé aux propriétaires de véhicules.
+                                </p>
+                                <button class="btn btn-sm btn-outline-dark rounded-pill" disabled>
+                                    Vous n'avez pas de voiture
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,106 @@
+{% load humanize %}
+
+<div class="row g-4 justify-content-center">
+    
+    <div class="col-lg-12">
+        
+        <div class="card shadow-lg border-0 mb-4 border-top border-4 border-warning">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-industry me-2 text-warning"></i> Zone Industrielle</h5>
+                
+                {% if is_manager %}
+                    <div class="d-flex align-items-center">
+                        <small class="text-muted me-2 fw-bold text-uppercase" style="font-size: 0.7rem;">État Machines</small>
+                        <div class="progress" style="width: 100px; height: 8px;">
+                            <div class="progress-bar {% if batiment.etat > 50 %}bg-success{% else %}bg-danger{% endif %}" 
+                                 role="progressbar" style="width: {{ batiment.etat }}%"></div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-4">
+                
+                <div class="row g-4 justify-content-center">
+                    
+                    {% if is_manager %}
+                        <div class="col-md-8">
+                            <div class="p-5 border rounded-3 bg-light h-100 text-center position-relative overflow-hidden">
+                                <i class="fas fa-cogs fa-5x text-secondary position-absolute opacity-10" style="bottom: -10px; right: -10px;"></i>
+                                
+                                <h5 class="fw-bold text-dark mb-3">Ligne de Production</h5>
+                                <p class="text-muted mb-4">Lancez une production intensive pour générer des revenus rapides pour la ville.</p>
+                                
+                                <div class="alert alert-warning border-0 small py-2 mb-4 d-inline-block px-4">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Risque : Use les machines (-10% État)
+                                </div>
+
+                                <form action="{% url 'action_usine' batiment.id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="production">
+                                    <button type="submit" class="btn btn-warning text-dark w-100 py-3 fw-bold shadow-sm"
+                                            data-confirm="Lancer la production ? Cela rapportera 1 000 € mais abîmera l'usine."
+                                            data-title="Production Intensive"
+                                            data-type="warning">
+                                        <i class="fas fa-industry me-2"></i> Lancer la production (+1 000 €)
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    
+                    {% elif request.user.profil_citoyen.lieu_travail == batiment %}
+                        <div class="col-md-8">
+                            <div class="p-5 border rounded-3 bg-dark text-white h-100 text-center position-relative overflow-hidden">
+                                <i class="fas fa-hard-hat fa-5x text-light position-absolute opacity-10" style="top: -10px; left: -10px;"></i>
+                                
+                                <h5 class="fw-bold mb-3">Travail à la chaîne</h5>
+                                <p class="text-white-50 mb-4">Besoin d'argent rapide ? Faites des heures supplémentaires sur la ligne de montage.</p>
+                                
+                                <div class="d-flex justify-content-center gap-3 mb-4">
+                                    <span class="badge bg-success text-white border border-light px-3 py-2">+ 20 € (Prime)</span>
+                                    <span class="badge bg-danger text-white border border-light px-3 py-2">- 5% Santé</span>
+                                </div>
+
+                                <form action="{% url 'action_usine' batiment.id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="heures_sup">
+                                    
+                                    {% if request.user.profil_citoyen.sante > 10 %}
+                                        <button type="submit" class="btn btn-outline-light w-100 py-3 fw-bold"
+                                                data-confirm="Faire des heures sup ? C'est fatiguant."
+                                                data-title="Travail Supplémentaire"
+                                                data-type="primary">
+                                            <i class="fas fa-hammer me-2"></i> Faire des heures sup'
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-secondary w-100 py-3 disabled" disabled>
+                                            <i class="fas fa-bed me-2"></i> Trop fatigué
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="col-md-8">
+                            <div class="p-5 border rounded-3 bg-light h-100 text-center position-relative">
+                                <div class="mb-3">
+                                    <span class="fa-stack fa-2x">
+                                        <i class="fas fa-circle fa-stack-2x text-danger opacity-25"></i>
+                                        <i class="fas fa-user-lock fa-stack-1x text-danger"></i>
+                                    </span>
+                                </div>
+                                <h5 class="fw-bold text-dark">Accès Réservé au Personnel</h5>
+                                <p class="text-muted small mb-0">
+                                    Seuls les employés de cette usine sont autorisés à accéder aux machines.
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
