@@ -1,18 +1,23 @@
-## 🚀 Quick Start : Identifiants
+# 🏙️ Bienvenue dans RisingTown - Accès Démo
 
-```bash
-# 👑 SUPERUSER (Maire)
-User: maire
-Pass: maire
+Utilisez les comptes ci-dessous pour explorer les fonctionnalités du jeu selon la hiérarchie sociale.
 
-# 🛡️ STAFF VILLE (Adjoint)
-User: CIT01
-Pass: cit01
+### 👑 Le Maire (Pouvoir Exécutif)
+* **ID :** `maire`
+* **MDP :** `maire`
+> *Accès "God Mode". Peut construire, détruire, gérer le budget global et possède tous les droits inférieurs.*
 
-# 👔 GESTIONNAIRE (Directeur)
-User: direct
-Pass: direct
+### 🛡️ L'Adjoint (Bras Droit)
+* **ID :** `CIT01`
+* **MDP :** `cit01`
+> *Gère la maintenance urbaine (routes, réparations) et supervise les bâtiments. Cumule les mandats de Directeur.*
 
-# 👤 UTILISATEUR (Citoyen)
-User: lambda
-Pass: lambda
+### 👔 Le Directeur (Chef d'Entreprise)
+* **ID :** `direct`
+* **MDP :** `direct`
+> *Gère ses équipes (RH), publie des notes de service internes et lance la production industrielle.*
+
+### 👤 Le Citoyen Lambda (Habitant)
+* **ID :** `lambda`
+* **MDP :** `lambda`
+> *L'expérience de base : chercher un travail, se loger, gérer son budget, sa santé et son bonheur.*
