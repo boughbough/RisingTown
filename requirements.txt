@@ -1,0 +1,16 @@
+asgiref==3.10.0
+certifi==2025.11.12
+distlib==0.4.0
+Django==5.2.8
+django-extensions==4.1
+Faker==38.2.0
+filelock==3.20.0
+packaging==25.0
+pipenv==2025.0.4
+platformdirs==4.5.0
+pydot==4.0.1
+pyparsing==3.2.5
+setuptools==80.9.0
+sqlparse==0.5.3
+tzdata==2025.2
+virtualenv==20.35.4
