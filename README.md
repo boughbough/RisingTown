@@ -1,23 +1,10 @@
-# 🏙️ Bienvenue dans RisingTown - Accès Démo
+# 🔐 Comptes de Test & Rôles
 
-Utilisez les comptes ci-dessous pour explorer les fonctionnalités du jeu selon la hiérarchie sociale.
+Voici la liste des comptes pré-configurés pour tester les différents niveaux de permission de l'application **CityManager**.
 
-### 👑 Le Maire (Pouvoir Exécutif)
-* **ID :** `maire`
-* **MDP :** `maire`
-> *Accès "God Mode". Peut construire, détruire, gérer le budget global et possède tous les droits inférieurs.*
-
-### 🛡️ L'Adjoint (Bras Droit)
-* **ID :** `CIT01`
-* **MDP :** `cit01`
-> *Gère la maintenance urbaine (routes, réparations) et supervise les bâtiments. Cumule les mandats de Directeur.*
-
-### 👔 Le Directeur (Chef d'Entreprise)
-* **ID :** `direct`
-* **MDP :** `direct`
-> *Gère ses équipes (RH), publie des notes de service internes et lance la production industrielle.*
-
-### 👤 Le Citoyen Lambda (Habitant)
-* **ID :** `lambda`
-* **MDP :** `lambda`
-> *L'expérience de base : chercher un travail, se loger, gérer son budget, sa santé et son bonheur.*
+| Rôle | Identifiant | Mot de Passe | Niveau d'Accès |
+| :--- | :--- | :--- | :--- |
+| **👑 Maire** | `maire` | `maire` | **Superuser / Admin Total.** Construction, Destruction, Justice, Finances, Gestion Staff. |
+| **🛡️ Adjoint** | `CIT01` | `cit01` | **Administration Ville.** Maintenance, Voirie, News, Inspection globale + Droits Directeur. |
+| **👔 Directeur** | `direct` | `direct` | **Gestion Locale.** Recrutement, Licenciement, Notes de service, Production (sur son bâtiment). |
+| **👤 Citoyen** | `lambda` | `lambda` | **Utilisateur Standard.** Recherche d'emploi, Logement, Achats, Vote, Plaintes. |
