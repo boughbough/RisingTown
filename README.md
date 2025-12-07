@@ -1,11 +1,10 @@
-======COMPTE MAIRE======
-ID: maire, MDP: maire
+# 🔐 Comptes de Test & Rôles
 
-======COMPTE ADJOINT======
-ID: CIT01, MDP: cit01
+Voici la liste des comptes pré-configurés pour tester les différents niveaux de permission de l'application **CityManager**.
 
-======COMPTE DIRECTEUR======
-ID: direct, MDP: direct
-
-======COMPTE CITOYEN LAMBDA======
-ID: lambda, MDP: lambda
+| Rôle | Identifiant | Mot de Passe | Niveau d'Accès |
+| :--- | :--- | :--- | :--- |
+| **👑 Maire** | `maire` | `maire` | **Superuser / Admin Total.** Construction, Destruction, Justice, Finances, Gestion Staff. |
+| **🛡️ Adjoint** | `CIT01` | `cit01` | **Administration Ville.** Maintenance, Voirie, News, Inspection globale + Droits Directeur. |
+| **👔 Directeur** | `direct` | `direct` | **Gestion Locale.** Recrutement, Licenciement, Notes de service, Production (sur son bâtiment). |
+| **👤 Citoyen** | `lambda` | `lambda` | **Utilisateur Standard.** Recherche d'emploi, Logement, Achats, Vote, Plaintes. |
