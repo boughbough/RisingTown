@@ -1,0 +1,139 @@
+{% load humanize %}
+
+<div class="row g-4 justify-content-center">
+    
+    <div class="{% if can_see_staff %}col-lg-6{% else %}col-lg-12{% endif %}">
+        <div class="card shadow-lg border-0 h-100 border-top border-4 border-danger">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0 text-center">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-notes-medical me-2 text-danger"></i> Urgences & Soins</h5>
+                <p class="text-muted small">Service de santé publique</p>
+            </div>
+            <div class="card-body p-4 text-center">
+                
+                <div class="position-relative d-inline-block mb-4">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center border border-5 
+                                {% if request.user.profil_citoyen.sante > 70 %}border-success text-success
+                                {% elif request.user.profil_citoyen.sante > 30 %}border-warning text-warning
+                                {% else %}border-danger text-danger{% endif %}" 
+                         style="width: 130px; height: 130px;">
+                        <div>
+                            <div class="display-5 fw-bold">{{ request.user.profil_citoyen.sante }}%</div>
+                            <div class="small fw-bold text-uppercase" style="font-size: 0.7rem;">Vitalité</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if batiment.employes.count > 0 %}
+                    <div class="alert alert-success bg-opacity-10 border-0 text-success small mb-4">
+                        <i class="fas fa-user-md me-1"></i> Service ouvert ({{ batiment.employes.count }} médecins)
+                    </div>
+                    
+                    {% if request.user.profil_citoyen.sante < 100 %}
+                        <form action="{% url 'se_soigner' batiment.id %}" method="post" style="max-width: 350px; margin: 0 auto;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger w-100 shadow-lg py-3 fw-bold btn-soft"
+                                    data-confirm="Payer 50 € pour une consultation complète ?"
+                                    data-title="Soins médicaux"
+                                    data-type="danger">
+                                <i class="fas fa-heartbeat me-2"></i> Se Soigner (50 €)
+                            </button>
+                        </form>
+                    {% else %}
+                        <div style="max-width: 350px; margin: 0 auto;">
+                            <button class="btn btn-light border w-100 py-3 text-muted" disabled>
+                                <i class="fas fa-check me-2"></i> Santé Excellente
+                            </button>
+                        </div>
+                    {% endif %}
+
+                {% else %}
+                    <div class="alert alert-danger bg-opacity-10 border-0 text-danger small">
+                        <i class="fas fa-door-closed me-1"></i> <strong>Pénurie de personnel !</strong><br>
+                        Impossible de se faire soigner, aucun médecin n'est en poste.
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% if can_see_staff %}
+    <div class="col-lg-6">
+        <div class="card shadow-lg border-0 h-100">
+            
+            <div class="card-header bg-dark text-white border-0 pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="fas fa-file-medical-alt me-2"></i> Patients</h5>
+                
+                <div class="d-flex align-items-center gap-2">
+                    {% if is_manager %}
+                        <form action="{% url 'action_hopital' batiment.id %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="rappel_global">
+                            <button type="submit" class="btn btn-sm btn-outline-light rounded-pill border-opacity-50" 
+                                    title="Envoyer un rappel de prévention à toute la ville"
+                                    onclick="return confirm('Lancer une campagne de prévention (100 €) ?');">
+                                <i class="fas fa-bullhorn me-1"></i> Campagne
+                            </button>
+                        </form>
+                    {% endif %}
+                    <span class="badge bg-danger rounded-pill">{{ malades.count }}</span>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                {% if malades %}
+                    <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                        {% for m in malades %}
+                            <div class="list-group-item p-3 border-bottom-0 border-top">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3 position-relative">
+                                            <div class="rounded-circle bg-light text-dark fw-bold d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
+                                                {{ m.prenom|first }}{{ m.nom|first }}
+                                            </div>
+                                            <span class="position-absolute bottom-0 end-0 p-1 rounded-circle border border-white 
+                                                {% if m.sante < 30 %}bg-danger{% else %}bg-warning{% endif %}">
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <strong class="text-dark">{{ m.prenom }} {{ m.nom }}</strong>
+                                            <div class="small">
+                                                Santé : <span class="fw-bold {% if m.sante < 30 %}text-danger{% else %}text-warning{% endif %}">{{ m.sante }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if is_manager %}
+                                        <form action="{% url 'action_hopital' batiment.id %}" method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="rappel_individuel">
+                                            <input type="hidden" name="citoyen_id" value="{{ m.id }}">
+                                            
+                                            <button type="submit" class="btn btn-sm btn-outline-warning rounded-circle border-0 bg-warning bg-opacity-10 text-dark" 
+                                                    title="Envoyer un rappel officiel">
+                                                <i class="fas fa-envelope-open-text"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <a href="{% url 'telephone_chat' m.id %}" class="btn btn-sm btn-outline-secondary rounded-circle" title="Contacter">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                    {% endif %}
+
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-smile-beam fs-1 mb-3 opacity-25"></i><br>
+                        Toute la ville est en bonne santé !
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>

@@ -1,0 +1,249 @@
+<div class="row g-4">
+    
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <h5 class="mb-0 fw-bold text-primary">
+                    <i class="fas fa-file-signature me-2"></i>Déposer une plainte
+                </h5>
+            </div>
+            <div class="card-body pt-0">
+                <form action="{% url 'proposer_poste' batiment.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="type_demande" value="PLAINTE"> 
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold text-uppercase">Personne visée (Optionnel)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-user-tag text-muted"></i></span>
+                                <select name="accuse_id" class="form-select border-start-0 bg-light">
+                                    <option value="" selected>-- Inconnu / X --</option>
+                                    {% for c in citoyens_list %}
+                                        <option value="{{ c.id }}">{{ c.nom }} {{ c.prenom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold text-uppercase">Sanction souhaitée</label>
+                            <select name="sanction_souhaitee" class="form-select bg-light">
+                                <option value="Avertissement">Simple Avertissement</option>
+                                <option value="Amende">Demande d'Amende</option>
+                                <option value="Prison">Demande de Prison Ferme</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <textarea class="form-control bg-light" name="message" placeholder="Faits" style="height: 100px" required></textarea>
+                        <label>Description des faits / Délit constaté</label>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-paper-plane me-2"></i>Enregistrer la plainte
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if is_manager %}
+    <div class="col-md-12">
+        
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-danger bg-opacity-10 py-3 d-flex justify-content-between align-items-center border-0">
+                <h5 class="mb-0 fw-bold text-danger">
+                    <i class="fas fa-bell me-2"></i>Plaintes en cours
+                </h5>
+                <span class="badge bg-danger rounded-pill">{{ plaintes.count }}</span>
+            </div>
+            
+            <div class="list-group list-group-flush">
+                {% for p in plaintes %}
+                    <div class="list-group-item p-4 border-bottom">
+                        <div class="row align-items-start">
+                            <div class="col-md-9">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                        {{ p.citoyen.prenom|first }}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark">{{ p.citoyen.prenom }} {{ p.citoyen.nom }}</h6>
+                                        <small class="text-muted" style="font-size: 0.75rem;">{{ p.date_creation|date:"d M Y à H:i" }}</small>
+                                    </div>
+                                </div>
+                                <div class="bg-light p-3 rounded text-secondary fst-italic border-start border-3 border-danger">
+                                    "{{ p.message|linebreaksbr }}"
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mt-3 mt-md-0 d-flex flex-column gap-2">
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger w-100 btn-traiter" 
+                                        data-plainte-id="{{ p.id }}"
+                                        data-message="{{ p.message }}">
+                                    <i class="fas fa-gavel me-1"></i> Traiter
+                                </button>
+
+                                <form action="{% url 'classer_plainte' p.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100 border-0">
+                                        <i class="fas fa-trash me-1"></i> Classer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-5">
+                        <div class="opacity-25 mb-3">
+                            <i class="fas fa-shield-alt fa-3x"></i>
+                        </div>
+                        <h6 class="text-muted fw-bold">Aucune plainte à traiter</h6>
+                        <small class="text-muted">La ville est calme pour le moment.</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card shadow-lg border-0 overflow-hidden" id="policeFormCard">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="fas fa-balance-scale me-2 text-warning"></i>Appliquer une Sanction
+                </h5>
+            </div>
+            <form action="{% url 'action_police' batiment.id %}" method="post" id="policeForm">
+    {% csrf_token %}
+    <input type="hidden" name="plainte_id" id="inputPlainteId">
+    
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-uppercase text-muted">Coupable</label>
+            <select name="citoyen_id" id="selectCoupable" class="form-select border-0 shadow-sm" required>
+                <option value="" selected disabled>Choisir un citoyen...</option>
+                {% for c in citoyens_list %}
+                    <option value="{{ c.id }}">{{ c.nom }} {{ c.prenom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-uppercase text-muted">Verdict</label>
+            <select name="action_type" class="form-select border-0 shadow-sm" id="sanctionSelect" onchange="toggleSanctionInput()">
+                <option value="amende">💰 Amende</option>
+                <option value="prison">⛓️ Prison Ferme</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <div id="inputAmende">
+                <label class="form-label small fw-bold text-uppercase text-muted">Montant (€)</label>
+                <input type="number" name="montant" class="form-control border-0 shadow-sm" value="135">
+            </div>
+            <div id="inputPrison" style="display:none;">
+                <label class="form-label small fw-bold text-uppercase text-muted">Durée (Minutes)</label>
+                <input type="number" name="duree" class="form-control border-0 shadow-sm" value="10">
+            </div>
+        </div>
+        
+        <div class="col-md-12 mt-3">
+            <label class="form-label small fw-bold text-uppercase text-muted">Motif de la condamnation</label>
+            <input type="text" name="motif" class="form-control border-0 shadow-sm" placeholder="Ex: Vol de voiture, Tapage nocturne..." required>
+        </div>
+
+        <div class="col-12 mt-4 text-end">
+            <button type="submit" class="btn btn-warning text-dark fw-bold px-5 shadow-sm rounded-pill">
+                <i class="fas fa-gavel me-2"></i> EXÉCUTER LA PEINE ET ARCHIVER
+            </button>
+        </div>
+    </div>
+</form>
+        </div>
+
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // 1. Bascule visuelle Amende / Prison (Inputs)
+    function toggleSanctionInput() {
+        const select = document.getElementById('sanctionSelect');
+        if (!select) return; // Sécurité si l'élément n'existe pas
+
+        const type = select.value;
+        const divAmende = document.getElementById('inputAmende');
+        const divPrison = document.getElementById('inputPrison');
+        
+        if (type === 'amende') {
+            divAmende.style.display = 'block';
+            divPrison.style.display = 'none';
+        } else {
+            divAmende.style.display = 'none';
+            divPrison.style.display = 'block';
+        }
+    }
+
+    // 2. Gestion intelligente du clic "TRAITER"
+    document.addEventListener("DOMContentLoaded", function() {
+        // On s'assure que l'état initial est bon
+        toggleSanctionInput();
+
+        const treatButtons = document.querySelectorAll('.btn-traiter');
+        
+        treatButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // A. Récupération des données brutes
+                const plainteId = this.dataset.plainteId;
+                const message = this.dataset.message;
+                
+                // B. Remplissage de l'ID Plainte (pour suppression auto)
+                document.getElementById('inputPlainteId').value = plainteId;
+
+                // C. RECHERCHE DU COUPABLE : (Format: (ID:123))
+                const matchId = message.match(/\(ID:(\d+)\)/);
+                const selectCoupable = document.getElementById('selectCoupable');
+                
+                if (matchId && matchId[1]) {
+                    selectCoupable.value = matchId[1];
+                    // Petit effet visuel "Halo Jaune" sur le coupable
+                    selectCoupable.style.transition = "box-shadow 0.3s";
+                    selectCoupable.style.boxShadow = "0 0 0 4px rgba(255, 193, 7, 0.5)";
+                    setTimeout(() => selectCoupable.style.boxShadow = "none", 1500);
+                } else {
+                    alert("Coupable non identifié automatiquement.");
+                }
+
+                // D. RECHERCHE DE LA SANCTION : (Format: [DEMANDE: Prison])
+                // C'est la partie qui manquait !
+                const matchSanction = message.match(/\[DEMANDE:\s*(\w+)\]/);
+                const selectSanction = document.getElementById('sanctionSelect');
+
+                if (matchSanction && matchSanction[1]) {
+                    const demande = matchSanction[1].trim(); // "Amende" ou "Prison"
+                    
+                    // On mappe la demande (Majuscule) vers la value du select (minuscule)
+                    if (demande === 'Amende') {
+                        selectSanction.value = 'amende';
+                    } else if (demande === 'Prison') {
+                        selectSanction.value = 'prison';
+                    }
+                    
+                    // IMPORTANT : On force la mise à jour des inputs (€ vs Min)
+                    toggleSanctionInput();
+                    
+                    // Petit effet visuel sur la sanction aussi
+                    selectSanction.style.transition = "box-shadow 0.3s";
+                    selectSanction.style.boxShadow = "0 0 0 4px rgba(220, 53, 69, 0.5)"; // Rouge
+                    setTimeout(() => selectSanction.style.boxShadow = "none", 1500);
+                }
+
+                // E. Scroll fluide vers le formulaire
+                const card = document.getElementById('policeFormCard');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+    });
+</script>

@@ -1,0 +1,1484 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}  Ma Ville- {{ ville.nom }}{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar fixed-top navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% include 'fragments/logo.html' %} Rising<span class="fw-light">Town</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                
+                <a href="{% url 'dashboard' %}?mode=citoyen" class="btn btn-sm btn-white border shadow-sm rounded-pill px-3 fw-bold text-primary">
+                    <i class="fas fa-user-circle me-2"></i> Ma Vie
+                </a>
+
+                <div class="d-none d-md-block text-end">
+                    <div class="small fw-bold text-dark">{{ user.username }}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">
+                        {% if user.is_superuser %}Maire{% else %}Adjoint{% endif %}
+                    </div>
+                </div>
+                
+                <div class="bg-light rounded-circle p-2 text-primary border">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                
+                {% include 'fragments/theme_btn.html' %}
+
+                <form action="{% url 'logout' %}" method="post" class="ms-2 logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+
+    
+<div class="container mb-5">
+    
+    {% if evenement %}
+        <div class="container mt-4 px-0">
+            <div class="alert alert-{{ evenement.type }} shadow-sm border-0 rounded-3 d-flex align-items-center" role="alert">
+                <div class="fs-2 me-3 opacity-50"><i class="fas {{ evenement.icone }}"></i></div>
+                <div>
+                    <h5 class="alert-heading fw-bold mb-1">{{ evenement.titre }}</h5>
+                    <p class="mb-0 small">{{ evenement.message|safe }}</p>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mt-3 border-0">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="text-center py-5">
+        <span class="badge bg-white text-dark border shadow-sm rounded-pill mb-3 px-3 py-2 fw-normal">
+            <i class="far fa-clock text-primary me-1"></i> <span id="live-clock">--:--</span>
+        </span>
+        
+        <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+            <h1 class="display-5 fw-bold mb-0">Ville de <span class="text-primary">{{ ville.nom }}</span></h1>
+            
+            <button onclick="scrollToMap()" class="btn btn-white text-primary border shadow-sm rounded-circle d-flex align-items-center justify-content-center" 
+                    style="width: 50px; height: 50px; transition: transform 0.2s;" 
+                    onmouseover="this.style.transform='scale(1.1)'" 
+                    onmouseout="this.style.transform='scale(1)'"
+                    title="Voir la carte">
+                <i class="fas fa-map-marked-alt fs-5"></i>
+            </button>
+        </div>
+
+        <p class="text-muted">Tableau de bord de gestion urbaine en temps réel</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stat-tile stat-budget">
+                <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                <div class="stat-content">
+                    <h2>{{ ville.budget|floatformat:0 }} <small class="fs-6 text-muted">€</small></h2>
+                    <p>Trésorerie</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-tile stat-energy">
+                <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                <div class="stat-content">
+                    <h2>{{ ville.energie_stock }} <small class="fs-6 text-muted">kWh</small></h2>
+                    <p>Stock Énergie</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-tile stat-pop">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-content">
+                    <h2>{{ ville.population_totale }}</h2>
+                    <p>Habitants</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-5">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-chart-pie me-2 text-primary"></i> Indicateurs Sociaux</span>
+                
+                {% if taux_chomage > 20 or sdf > 0 or sante_moyenne < 50 %}
+                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 border border-danger border-opacity-25">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Critique
+                    </span>
+                {% else %}
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 border border-success border-opacity-25">
+                        <i class="fas fa-check-circle me-1"></i> Stable
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="card-body">
+                <div class="row text-center mb-2">
+                    
+                    <div class="col-md-3 border-end"> <h6 class="text-uppercase text-muted small fw-bold tracking-wide">Chômage</h6>
+                        <div class="display-6 fw-bold my-2 {% if taux_chomage > 20 %}text-danger{% endif %}">
+                            {{ taux_chomage }}%
+                        </div>
+                        <span class="text-muted small">{{ chomeurs }} demandeurs</span>
+                    </div>
+
+                    <div class="col-md-3 border-end">
+                        <h6 class="text-uppercase text-muted small fw-bold tracking-wide">Mal-logement</h6>
+                        <div class="display-6 fw-bold my-2 {% if sdf > 0 %}text-danger{% endif %}">
+                            {{ sdf }}
+                        </div>
+                        <span class="text-muted small">Sans abri fixe</span>
+                    </div>
+
+                    <div class="col-md-3 border-end">
+                        <h6 class="text-uppercase text-muted small fw-bold tracking-wide">Santé Publique</h6>
+                        <div class="display-6 fw-bold my-2 {% if sante_moyenne < 50 %}text-danger{% else %}text-success{% endif %}">
+                            {{ sante_moyenne }}%
+                        </div>
+                        <span class="text-muted small">Indice vital</span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <h6 class="text-uppercase text-muted small fw-bold tracking-wide">Humeur</h6>
+                        <div class="display-6 fw-bold my-2 
+                            {% if bonheur_moyen > 80 %}text-success
+                            {% elif bonheur_moyen > 50 %}text-warning
+                            {% else %}text-danger{% endif %}">
+                            {{ bonheur_moyen }}%
+                        </div>
+                        <span class="text-muted small">
+                            {% if bonheur_moyen > 80 %}🤩 Radieuse
+                            {% elif bonheur_moyen > 50 %}😐 Correcte
+                            {% else %}😡 Tendue{% endif %}
+                        </span>
+                    </div>
+
+                </div>
+
+                {% if taux_chomage > 20 or sdf > 0 or sante_moyenne < 50 or bonheur_moyen < 40 %}
+                    <hr class="my-4 opacity-10">
+                    
+                    <div class="alert alert-light border-start border-4 border-warning shadow-sm rounded-3 d-flex" role="alert">
+                        <div class="me-3 text-warning fs-3">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div>
+                            <h6 class="alert-heading fw-bold text-dark mb-1">Rapport du Conseiller</h6>
+                            <ul class="mb-0 small text-muted ps-3 mt-2">
+                                
+                                {% if taux_chomage > 20 %}
+                                    <li class="mb-1"><strong class="text-danger">Chômage :</strong> Construisez des entreprises (Usines, Commerces).</li>
+                                {% endif %}
+
+                                {% if sdf > 0 %}
+                                    <li class="mb-1"><strong class="text-danger">SDF :</strong> Construisez des logements (Maisons, Immeubles).</li>
+                                {% endif %}
+
+                                {% if sante_moyenne < 50 %}
+                                    <li class="mb-1"><strong class="text-danger">Santé :</strong> L'Hôpital manque de moyens ou de personnel.</li>
+                                {% endif %}
+
+                                {% if bonheur_moyen < 40 %}
+                                    <li class="mb-1"><strong class="text-danger">Colère Grondante :</strong> Organisez des fêtes (École) ou baissez les impôts !</li>
+                                {% endif %}
+
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h3 class="h4 fw-bold m-0">🏗️ Actions Rapides</h3>
+            </div>
+            
+            {% if user.is_superuser %}
+                <div class="d-flex flex-wrap gap-3 align-items-center mt-2">
+                    <a href="{% url 'construire' %}" class="btn-soft btn-build text-decoration-none">
+                        <i class="fas fa-hammer"></i> Construire
+                    </a>
+                    
+                    <form action="{% url 'verser_salaires' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-soft btn-pay" onclick="return confirm('Verser les salaires et avancer le temps ?');">
+                            <i class="fas fa-forward"></i> Avancer le temps
+                        </button>
+                    </form>
+                    
+                    <form action="{% url 'collecter_impots' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-soft btn-tax" onclick="return confirm('Prélever 10% sur tous les citoyens ?');">
+                            <i class="fas fa-hand-holding-usd"></i> Impôts
+                        </button>
+                    </form>
+
+                    <div class="vr mx-2 opacity-25"></div>
+
+                    <a href="{% url 'gestion_citoyens' %}" class="btn btn-light border shadow-sm rounded-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" title="Citoyens">
+                        <i class="fas fa-users-cog text-muted"></i>
+                    </a>
+                    <a href="{% url 'parametres_ville' %}" class="btn btn-light border shadow-sm rounded-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" title="Paramètres">
+                        <i class="fas fa-cogs text-muted"></i>
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-info border-0 shadow-sm">
+                    <i class="fas fa-info-circle me-2"></i> Mode lecture (Adjoint).
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-5 position-relative">
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <h3 class="h4 fw-bold m-0">🗺️ Carte de la Ville</h3>
+            
+            <div class="d-flex align-items-center bg-white p-2 rounded-pill shadow-sm border gap-2">
+                <button class="btn btn-sm btn-light rounded-circle" onclick="recenterMap()" title="Recentrer">
+                    <i class="fas fa-crosshairs text-primary"></i>
+                </button>
+                
+                <div class="vr opacity-25"></div>
+                
+                <i class="fas fa-search-minus text-muted zoom-btn ms-2" onclick="manualZoom(-1)"></i>
+                <input type="range" class="form-range mx-2" min="0.2" max="1.5" step="0.1" value="0.5" id="zoomSlider" style="width: 100px;">
+                <i class="fas fa-search-plus text-muted zoom-btn me-2" onclick="manualZoom(1)"></i>
+
+                {% if user.is_superuser %}
+                    <div class="vr opacity-25"></div>
+                    
+                    <button id="toggleRoadMode" class="btn btn-tool ms-1" title="Construire Route Droite">
+                        <i class="fas fa-road"></i>
+                    </button>
+
+                    <button id="toggleCornerMode" class="btn btn-tool ms-1" title="Construire Virage">
+                        <i class="fas fa-turn-up" style="transform: rotate(90deg);"></i>
+                    </button>
+                    
+                    <button id="toggleDeleteMode" class="btn btn-tool ms-1" title="Supprimer">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if moving_batiment %}
+            <div class="alert alert-primary d-flex justify-content-between align-items-center shadow border-0 rounded-3 mb-3">
+                <div>
+                    <strong><i class="fas fa-arrows-alt"></i> Mode Déplacement</strong> : {{ moving_batiment.nom }}
+                    <div class="small">Cliquez sur un emplacement blanc clignotant.</div>
+                </div>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light text-primary fw-bold rounded-pill px-3">Annuler</a>
+            </div>
+        {% endif %}
+        
+        <div class="card border-0 shadow-lg" style="overflow: visible !important;">
+            <div class="card-body p-0 position-relative" id="city-viewport">
+                <div id="controls-legend" class="controls-legend">
+                    <div class="legend-header">
+                        <i class="fas fa-clipboard-list"></i> Guide Chantier
+                    </div>
+                    <ul class="list-unstyled mb-0">
+                        <li>
+                            <span class="key-badge">Clic</span> 
+                            <span id="legend-action" class="legend-text">Poser</span>
+                        </li>
+                        <li>
+                            <span class="key-badge">Hold</span> 
+                            <span class="legend-text">Tracer</span>
+                        </li>
+                        <li id="legend-rotate">
+                            <span class="key-badge">R</span> 
+                            <span class="legend-text">Pivoter</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="building-locator">
+                    <div class="legend-header" style="border-left: 5px solid #4f46e5;">
+                        <i class="fas fa-search-location"></i> Annuaire
+                    </div>
+                    <div class="locator-list">
+                        {% for bat in ville.batiments.all %}
+                            {% if bat.type_batiment != 'ROUTE' and bat.type_batiment != 'ROUTE_VIRAGE' %}
+                                <div class="locator-item" onclick="focusOnBuilding({{ bat.x }}, {{ bat.y }}, {{ bat.largeur }}, {{ bat.hauteur }}, 'bat-{{ bat.id }}')">
+                                    <div class="locator-icon">
+                                        {% if bat.type_batiment == 'MAIRIE' %}<i class="fas fa-landmark text-primary"></i>
+                                        {% elif bat.type_batiment == 'HOPITAL' %}<i class="fas fa-hospital text-danger"></i>
+                                        {% else %}<i class="fas fa-building text-muted"></i>{% endif %}
+                                    </div>
+                                    <div class="locator-info">
+                                        <span class="fw-bold">{{ bat.nom|truncatechars:18 }}</span>
+                                        <span class="text-muted small" style="font-size: 0.7rem;">{{ bat.get_type_batiment_display }}</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                     
+                <div class="iso-scene {% if moving_batiment %}locked-mode{% endif %}" id="cityScene">
+                    <div id="the-sun" class="celestial-body sun"></div>
+                    <div id="the-moon" class="celestial-body moon"></div>
+                    
+                    <div class="iso-map">
+                        <div class="iso-grid"></div>
+                            <div class="iso-ghost" 
+                                {% if moving_batiment %}
+                                    data-move-url="{% url 'valider_deplacement' moving_batiment.id 999 888 %}"
+                                    style="
+                                        width: calc((var(--cell-size) * {{ moving_batiment.largeur }}) - 2px);
+                                        height: calc((var(--cell-size) * {{ moving_batiment.hauteur }}) - 2px);
+                                    "
+                                {% endif %}
+                            ></div>
+
+                        {% load static %} 
+                        {% for bat in ville.batiments.all %}
+    
+                            {% if bat.type_batiment == 'ROUTE' or bat.type_batiment == 'ROUTE_VIRAGE' %}
+                                
+                                <div id="bat-{{ bat.id }}" 
+                                    class="iso-building" 
+                                    style="
+                                        left: calc(var(--cell-size) * {{ bat.x }}); 
+                                        top: calc(var(--cell-size) * {{ bat.y }});
+                                        width: calc(var(--cell-size) * {{ bat.largeur }}); 
+                                        height: calc(var(--cell-size) * {{ bat.hauteur }});
+                                        z-index: 1; /* Toujours au sol */
+                                    ">
+                                    
+                                    {% if bat.type_batiment == 'ROUTE' %}
+                                        <div class="road-tile" style="transform: rotate({{ bat.rotation }}deg);"></div>
+                                    {% else %}
+                                        <div class="road-corner" style="transform: rotate({{ bat.rotation }}deg);"></div>
+                                    {% endif %}
+                                    
+                                </div>
+
+                            {% else %}
+                                <a href="{% url 'batiment_detail' bat.id %}" 
+                                id="bat-{{ bat.id }}"
+                                class="iso-building building-link" 
+                                data-bat-name="{{ bat.nom }}"
+                                style="
+                                    left: calc(var(--cell-size) * {{ bat.x }}); 
+                                    top: calc(var(--cell-size) * {{ bat.y }});
+                                    width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
+                                    height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px);
+                                    z-index: {{ bat.y|add:bat.hauteur|add:10 }};
+                                ">
+                                    <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
+                                        alt="{{ bat.type_batiment }}"
+                                        class="building-sprite"
+                                        style="{% if bat == moving_batiment %}opacity: 0.6; filter: grayscale(100%) brightness(1.2);{% endif %}"
+                                        onerror="this.src='https://via.placeholder.com/150?text=IMG'">
+                                        
+                                    <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
+                                </a>
+                            {% endif %}
+
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-5">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+            <span><i class="fas fa-newspaper me-2 text-primary"></i> Journal Officiel</span>
+            {% if user.is_superuser or user.is_adjoint %}
+                <button class="btn btn-sm btn-light border rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#formNews">
+                    <i class="fas fa-plus"></i>
+                </button>
+            {% endif %}
+        </div>
+        
+        <div class="collapse p-3 bg-light border-bottom" id="formNews">
+            <form action="{% url 'publier_news_ville' %}" method="post" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="text" name="titre" class="form-control form-control-sm" placeholder="Titre" required>
+                <input type="text" name="contenu" class="form-control form-control-sm" placeholder="Message..." required>
+                <button type="submit" class="btn btn-primary btn-sm px-3">Publier</button>
+            </form>
+        </div>
+
+        <div class="card-body">
+            {% for actu in ville.actualites.all reversed %}
+                {% if not actu.batiment %}
+                    <div class="journal-item mb-4">
+                        <div class="journal-date">{{ actu.date_creation|date:"d M Y - H:i" }}</div>
+                        <div class="journal-title">{{ actu.titre }}</div>
+                        <p class="text-muted mb-0 small">{{ actu.contenu }}</p>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'supprimer_actualite' actu.id %}" class="text-danger small text-decoration-none mt-1 d-inline-block hover-underline">
+                                Supprimer
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% empty %}
+                <div class="text-center py-5 text-muted opacity-50">
+                    <i class="far fa-newspaper fs-1 mb-2"></i><br>
+                    Aucune actualité récente.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // --- VARIABLES GLOBALES ---
+    const scene = document.querySelector('.iso-scene');
+    let isDown = false;
+    let isDrawing = false;
+    let startX, startY, scrollLeft, scrollTop;
+    let currentRotation = 0;
+    let lastHoverX = -1; // <--- NOUVEAU
+    let lastHoverY = -1; // <--- NOUVEAU
+    let hasMoved = false; // <--- NOUVEAU : Pour savoir si on a bougé la carte
+
+    let moveW = parseInt("{{ moving_batiment.largeur|default:1 }}");
+    let moveH = parseInt("{{ moving_batiment.hauteur|default:1 }}");
+
+    const mapObstacles = {{ obstacles_json|safe|default:"[]" }};
+    const mapWidth = parseInt("{{ ville.largeur_map }}") || 20;
+    const mapHeight = parseInt("{{ ville.hauteur_map }}") || 20;
+
+    // Modes d'édition
+    let roadMode = false;
+    let deleteMode = false;
+    let cornerMode = false; // <--- NOUVEAU
+
+    // Éléments DOM
+    const roadBtn = document.getElementById('toggleRoadMode');
+    const deleteBtn = document.getElementById('toggleDeleteMode');
+    const sceneContainer = document.querySelector('.iso-scene');
+    const cornerBtn = document.getElementById('toggleCornerMode'); // <--- NOUVEAU
+
+    // --- INITIALISATION ---
+    document.addEventListener("DOMContentLoaded", function() {
+        initGridSystem();
+        initNotificationHandlers(); // Si tu as gardé cette fonction ailleurs
+        
+        // Centre la carte après un court délai
+        setTimeout(recenterMap, 100);
+        loadZoomState();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'r' || e.key === 'R') && (roadMode || cornerMode)) {
+            currentRotation = (currentRotation + 90) % 360;
+            
+            // --- AJOUT ICI ---
+            // On force la mise à jour visuelle du fantôme immédiatement
+            if (lastHoverX !== -1 && lastHoverY !== -1) {
+                updateGhostPosition(lastHoverX, lastHoverY);
+            }
+            // -----------------
+
+            // (Tu peux garder ou enlever le Toast Swal, le visuel suffit souvent)
+            // const Toast = ... 
+        }
+    });
+
+    // ============================================================
+    // 1. GESTION DES MODES (ROUTE / GOMME)
+    // ============================================================
+    function toggleMode(mode) {
+        // 1. Reset des variables
+        roadMode = false;
+        deleteMode = false;
+        cornerMode = false; 
+        
+        // 2. RESET VISUEL (On enlève toutes les classes actives)
+        // On remet tous les boutons à leur état "neutre"
+        if(roadBtn) roadBtn.className = "btn btn-tool ms-1"; 
+        if(cornerBtn) cornerBtn.className = "btn btn-tool ms-1"; 
+        if(deleteBtn) deleteBtn.className = "btn btn-tool ms-1"; 
+        
+        // 3. Reset Scène & Légende
+        if(sceneContainer) {
+            sceneContainer.classList.remove('road-active');
+            document.body.style.cursor = 'default';
+        }
+        const ghost = document.querySelector('.iso-ghost');
+        if(ghost) ghost.style.display = 'none';
+
+        const legend = document.getElementById('controls-legend');
+        const legendAction = document.getElementById('legend-action');
+        const legendRotate = document.getElementById('legend-rotate');
+        if(legend) legend.classList.remove('visible');
+
+        // --- ACTIVATION ---
+
+        // A. ROUTE (Indigo)
+        if (mode === 'road') {
+            roadMode = true;
+            roadBtn.classList.add('active-road'); // <--- Nouvelle Classe
+            activateGridCursor();
+            showLegend("Poser", true);
+        } 
+        
+        // B. VIRAGE (Violet)
+        else if (mode === 'corner') { 
+            cornerMode = true;
+            cornerBtn.classList.add('active-corner'); // <--- Nouvelle Classe
+            activateGridCursor();
+            
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            Toast.fire({ icon: 'info', title: 'Mode Virage (R pour tourner)' });
+            showLegend("Poser", true);
+        }
+        
+        // C. GOMME (Rose)
+        else if (mode === 'delete') {
+            deleteMode = true;
+            deleteBtn.classList.add('active-delete'); // <--- Nouvelle Classe
+            activateGridCursor();
+            document.body.style.cursor = 'not-allowed';
+            showLegend("Supprimer", false);
+        }
+
+        // Petite fonction helper pour la légende (pour éviter de répéter le code)
+        function showLegend(actionText, showRotate) {
+            if(legend) {
+                legend.classList.add('visible');
+                legendAction.innerText = actionText;
+                legendRotate.style.display = showRotate ? "list-item" : "none";
+            }
+        }
+    }
+
+    function activateGridCursor() {
+        if(sceneContainer) sceneContainer.classList.add('road-active');
+        document.body.style.cursor = 'crosshair';
+    }
+
+    // Câblage Boutons
+    if(roadBtn) roadBtn.addEventListener('click', () => toggleMode(roadMode ? 'none' : 'road'));
+    if(cornerBtn) cornerBtn.addEventListener('click', () => toggleMode(cornerMode ? 'none' : 'corner')); // <--- Click
+    if(deleteBtn) deleteBtn.addEventListener('click', () => toggleMode(deleteMode ? 'none' : 'delete'));
+
+
+    // ============================================================
+    // 2. ACTIONS SUR LA GRILLE (CONSTRUIRE / SUPPRIMER)
+    // ============================================================
+    
+    // A. Construire une route
+    function buildRoad(x, y) {
+    if (!roadMode) return;
+
+    // ON AJOUTE LE PARAMÈTRE DANS L'URL (?rotation=...)
+    fetch(`/place/road/${x}/${y}/?rotation=${currentRotation}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // On passe la rotation renvoyée par le serveur (pour être sûr)
+                addRoadVisual(x, y, data.id, data.rotation); 
+            } else {
+                flashCellError(x, y);
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+    // B. Supprimer une route (Gomme)
+    function deleteRoad(x, y) {
+        if (!deleteMode) return;
+
+        console.log(`Tentative de suppression en X:${x} Y:${y}...`); // Debug
+
+        fetch(`/delete/road/${x}/${y}/`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Erreur HTTP: ${res.status}`); // On verra si c'est une 404
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log("Réponse serveur:", data); // Debug
+
+                if (data.status === 'ok') {
+                    // On supprime l'élément du DOM
+                    const el = document.getElementById('bat-' + data.id_deleted);
+                    if (el) {
+                        // Animation de disparition
+                        el.style.transition = "all 0.2s ease-out";
+                        el.style.transform = "scale(0.5)";
+                        el.style.opacity = "0";
+                        
+                        setTimeout(() => el.remove(), 200);
+                    } else {
+                        console.warn("Élément HTML introuvable pour ID:", data.id_deleted);
+                    }
+                } else {
+                    console.log("Rien à supprimer ici (ou erreur serveur).");
+                }
+            })
+            .catch(err => console.error("Erreur Gomme:", err));
+    }
+
+    // C. Ajout visuel immédiat AVEC ANIMATION
+    // C. Ajout visuel immédiat AVEC ANIMATION
+    function addRoadVisual(x, y, id, rotation, type = 'straight') {
+        const mapContainer = document.querySelector('.iso-map');
+        
+        // 1. Création de l'élément
+        const roadDiv = document.createElement('div');
+        if (id) roadDiv.id = 'bat-' + id;
+        roadDiv.className = 'iso-building';
+        
+        // 2. Positionnement
+        roadDiv.style.left = `calc(var(--cell-size) * ${x})`;
+        roadDiv.style.top = `calc(var(--cell-size) * ${y})`;
+        roadDiv.style.width = `calc(var(--cell-size) * 2)`;
+        roadDiv.style.height = `calc(var(--cell-size) * 2)`;
+        roadDiv.style.zIndex = '1';
+        
+        // --- ANIMATION ÉTAPE 1 : ÉTAT INITIAL ---
+        roadDiv.style.opacity = '0';
+        roadDiv.style.transform = 'scale(0.5)';
+        roadDiv.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+        // 3. Contenu (le bitume)
+        const roadTile = document.createElement('div');
+
+        // --- CHOIX DE LA CLASSE ---
+        if (type === 'corner') {
+            roadTile.className = 'road-corner'; 
+        } else {
+            roadTile.className = 'road-tile'; 
+        }
+        
+        // J'AI SUPPRIMÉ LA LIGNE EN TROP ICI !
+
+        // APPLIQUER LA ROTATION CSS
+        const angle = rotation !== undefined ? rotation : 0;
+        roadTile.style.transform = `rotate(${angle}deg)`;
+        
+        roadDiv.appendChild(roadTile);
+        mapContainer.appendChild(roadDiv);
+
+        // --- ANIMATION ÉTAPE 2 : ÉTAT FINAL ---
+        setTimeout(() => {
+            roadDiv.style.opacity = '1';
+            roadDiv.style.transform = 'scale(1)';
+        }, 50);
+    }
+
+    // D. Effet visuel d'erreur
+    function flashCellError(x, y) {
+        // On doit sélectionner les 4 cellules car c'est du 2x2
+        // Simplification : on flashe juste celle cliquée
+        const cell = document.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+        if(cell) {
+            cell.style.backgroundColor = 'rgba(239, 68, 68, 0.5)'; // Rouge
+            setTimeout(() => {
+                cell.style.backgroundColor = '';
+            }, 300);
+        }
+    }
+
+
+    // ============================================================
+    // 3. SYSTÈME DE GRILLE & INTERACTION (CORRIGÉ)
+    // ============================================================
+    function initGridSystem() {
+        const gridContainer = document.querySelector('.iso-grid');
+        const mapWidth = parseInt("{{ ville.largeur_map }}") || 10; 
+        const mapHeight = parseInt("{{ ville.hauteur_map }}") || 10;
+        
+        // Variables locales pour mesurer le clic précisément
+        let clickStartX = 0;
+        let clickStartY = 0;
+        
+        if (gridContainer) {
+            gridContainer.innerHTML = ''; 
+            
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.style.left = `calc(var(--cell-size) * ${x})`;
+                    cell.style.top = `calc(var(--cell-size) * ${y})`;
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    // 1. DÉBUT DU CLIC : On mémorise où on a appuyé
+                    cell.addEventListener('mousedown', (e) => {
+                        clickStartX = e.clientX;
+                        clickStartY = e.clientY;
+
+                        // Gestion Routes (inchangée)
+                        if (roadMode || deleteMode || cornerMode) { 
+                            isDrawing = true; 
+                            triggerAction(x, y); 
+                            e.stopPropagation(); 
+                            e.preventDefault();
+                        }
+                    });
+
+                    // 2. FIN DU CLIC : On vérifie si on a bougé
+                    cell.addEventListener('mouseup', (e) => {
+                        // Si on est en train de tracer une route, on s'en fiche
+                        if (roadMode || deleteMode || cornerMode) return;
+
+                        // CALCUL DE LA DISTANCE PARCOURUE PAR LA SOURIS
+                        const diffX = Math.abs(e.clientX - clickStartX);
+                        const diffY = Math.abs(e.clientY - clickStartY);
+
+                        // TOLÉRANCE : Si on a bougé de moins de 5 pixels, c'est un CLIC valide
+                        const isClick = (diffX < 5 && diffY < 5);
+
+                        // EST-CE QU'ON EST EN MODE DÉPLACEMENT ?
+                        const isMovingMode = scene.classList.contains('moving-mode');
+
+                        if (isClick) {
+                            // Si on est en mode déplacement, ou navigation normale
+                            if (isMovingMode || !hasMoved) {
+                                console.log("Clic validé (Tolérance respectée) :", x, y);
+                                handleGridClick(x, y);
+                            }
+                        }
+                    });
+
+                    // 3. SURVOL (Ghost)
+                    cell.addEventListener('mouseenter', (e) => {
+                        updateGhostPosition(x, y); 
+                        if (isDrawing) triggerAction(x, y);
+                    });
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+        
+        // --- SUITE INCHANGÉE ---
+        document.addEventListener('mouseup', () => { isDrawing = false; });
+
+        const movingBatimentId = "{{ moving_batiment.id|default:'' }}";
+        if (movingBatimentId) {
+            if(scene) scene.classList.add('moving-mode');
+            const ghost = document.querySelector('.iso-ghost');
+            if(ghost) ghost.classList.add('active');
+            
+            const viewport = document.getElementById('city-viewport');
+            if(viewport) setTimeout(() => { 
+                viewport.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            }, 300);
+        }
+    }
+
+    // 2. FONCTION DE ROUTAGE
+    function triggerAction(x, y) {
+        if (roadMode) buildRoad(x, y);
+        else if (cornerMode) buildCorner(x, y); // <--- Appel Virage
+        else if (deleteMode) deleteRoad(x, y);
+    }
+
+    // 3. FONCTION BUILD CORNER (AJAX)
+    function buildCorner(x, y) {
+        fetch(`/place/virage/${x}/${y}/?rotation=${currentRotation}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    // On passe le type 'corner' à la fonction visuelle
+                    addRoadVisual(x, y, data.id, data.rotation, 'corner');
+                } else {
+                    flashCellError(x, y);
+                }
+            });
+    }
+
+    function isPositionValid(x, y, w, h) {
+        // 1. Vérifier les limites de la carte
+        if (x < 0 || y < 0 || (x + w) > mapWidth || (y + h) > mapHeight) {
+            return false; // Hors limite
+        }
+
+        // 2. Vérifier les collisions avec les autres bâtiments
+        for (let obs of mapObstacles) {
+            // Test de chevauchement de rectangles (AABB)
+            if (x < obs.x + obs.w &&
+                x + w > obs.x &&
+                y < obs.y + obs.h &&
+                y + h > obs.y) {
+                return false; // Collision !
+            }
+        }
+        
+        return true; // Tout est libre
+    }
+
+    function updateGhostPosition(x, y) {
+        const ghost = document.querySelector('.iso-ghost');
+        if (!ghost) return;
+
+        lastHoverX = x;
+        lastHoverY = y;
+
+        // EST-CE QU'ON DÉPLACE UN BÂTIMENT ?
+        const isMovingBuilding = scene.classList.contains('moving-mode');
+
+        // 1. Si aucun outil n'est actif, on cache (sauf si on déplace un bâtiment)
+        if (!roadMode && !cornerMode && !deleteMode && !isMovingBuilding) {
+            ghost.style.display = 'none';
+            return;
+        }
+
+        // 2. Positionnement de base
+        ghost.style.display = 'block';
+        ghost.style.left = `calc(var(--cell-size) * ${x})`;
+        ghost.style.top = `calc(var(--cell-size) * ${y})`;
+        
+        // 3. Reset du contenu
+        ghost.innerHTML = ''; 
+        ghost.className = 'iso-ghost active';
+
+        // --- CAS A : DÉPLACEMENT DE BÂTIMENT (PRIORITAIRE) ---
+        if (isMovingBuilding) {
+            // On dimensionne le fantôme
+            ghost.style.width = `calc((var(--cell-size) * ${moveW}) - 2px)`;
+            ghost.style.height = `calc((var(--cell-size) * ${moveH}) - 2px)`;
+            
+            // VÉRIFICATION DE LA COLLISION
+            const valid = isPositionValid(x, y, moveW, moveH);
+
+            if (valid) {
+                // VERT / BLEU (OK)
+                ghost.style.border = '2px dashed #60a5fa'; 
+                ghost.style.backgroundColor = 'rgba(96, 165, 250, 0.4)';
+                ghost.style.cursor = 'pointer';
+            } else {
+                // ROUGE (INTERDIT)
+                ghost.style.border = '2px solid #ef4444'; 
+                ghost.style.backgroundColor = 'rgba(239, 68, 68, 0.5)'; // Rouge plus opaque
+                ghost.style.cursor = 'not-allowed';
+            }
+            
+            return; 
+        }
+
+        // --- CAS B : OUTILS D'ÉDITION (Routes / Gomme) ---
+        
+        // Taille fixe 2x2 pour les routes
+        ghost.style.width = `calc((var(--cell-size) * 2) - 2px)`;
+        ghost.style.height = `calc((var(--cell-size) * 2) - 2px)`;
+
+        if (roadMode) {
+            ghost.style.border = '2px dashed #fff';
+            ghost.style.backgroundColor = 'rgba(50, 50, 50, 0.5)';
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'road-tile';
+            previewDiv.style.transform = `rotate(${currentRotation}deg)`;
+            previewDiv.style.opacity = '0.7';
+            ghost.appendChild(previewDiv);
+        }
+        else if (cornerMode) {
+            ghost.style.border = '2px dashed #fff';
+            ghost.style.backgroundColor = 'rgba(50, 50, 50, 0.5)';
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'road-corner';
+            previewDiv.style.transform = `rotate(${currentRotation}deg)`;
+            previewDiv.style.opacity = '0.7';
+            ghost.appendChild(previewDiv);
+        }
+        else if (deleteMode) {
+            ghost.style.border = '2px solid #ef4444';
+            ghost.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
+        }
+    }
+
+    function handleGridClick(x, y) {
+        // ... (gestion du ghost existant) ...
+        const ghost = document.querySelector('.iso-ghost');
+        
+        if (ghost && ghost.dataset.moveUrl && scene.classList.contains('moving-mode')) {
+            
+            // --- AJOUT SÉCURITÉ ---
+            // On revérifie la collision avant d'envoyer
+            if (!isPositionValid(x, y, moveW, moveH)) {
+                // Petit effet visuel d'erreur (secousse ou flash rouge)
+                const cell = document.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+                if(cell) {
+                    cell.style.backgroundColor = 'rgba(239, 68, 68, 0.8)';
+                    setTimeout(() => cell.style.backgroundColor = '', 200);
+                }
+                return; // ON STOPPE TOUT, pas de redirection !
+            }
+            // ----------------------
+
+            const baseUrl = ghost.dataset.moveUrl;
+            const finalUrl = baseUrl.replace('/999/', `/${x}/`).replace('/888/', `/${y}/`);
+            window.location.href = finalUrl;
+        }
+    }
+
+    // ============================================================
+    // 4. NAVIGATION (ZOOM & DRAG)
+    // ============================================================
+    function recenterMap() {
+        if(scene) {
+            scene.scrollTop = (scene.scrollHeight - scene.clientHeight) / 2;
+            scene.scrollLeft = (scene.scrollWidth - scene.clientWidth) / 2;
+        }
+    }
+
+    if(scene) {
+        scene.addEventListener('mousedown', (e) => {
+            // AJOUT DE CETTE CONDITION DE SÉCURITÉ :
+            if (roadMode || deleteMode) return; // Si on édite, on ne bouge pas la caméra !
+
+            isDown = true;
+            hasMoved = false;
+            scene.style.cursor = 'grabbing';
+            startX = e.pageX - scene.offsetLeft;
+            startY = e.pageY - scene.offsetTop;
+            scrollLeft = scene.scrollLeft;
+            scrollTop = scene.scrollTop;
+        });
+        scene.addEventListener('mouseleave', () => { isDown = false; if(!roadMode && !deleteMode) scene.style.cursor = 'grab'; });
+        scene.addEventListener('mouseup', () => { isDown = false; if(!roadMode && !deleteMode) scene.style.cursor = 'grab'; });
+        scene.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            hasMoved = true;
+            const x = e.pageX - scene.offsetLeft;
+            const y = e.pageY - scene.offsetTop;
+            const walkX = (x - startX) * 1.5; 
+            const walkY = (y - startY) * 1.5;
+            scene.scrollLeft = scrollLeft - walkX;
+            scene.scrollTop = scrollTop - walkY;
+        });
+    }
+
+    // Zoom Slider
+    const slider = document.getElementById('zoomSlider');
+    const root = document.documentElement;
+    
+    function updateZoom() {
+        if(!slider) return;
+        const newSize = 60 * slider.value; 
+        root.style.setProperty('--cell-size', newSize + 'px');
+        localStorage.setItem('mapZoomLevel', slider.value);
+    }
+    
+    function loadZoomState() {
+        if (!slider) return;
+        const savedZoom = localStorage.getItem('mapZoomLevel');
+        if (savedZoom) {
+            slider.value = savedZoom;
+            updateZoom();
+        }
+    }
+
+    if(slider) slider.addEventListener('input', updateZoom);
+
+    function manualZoom(direction) {
+        if (!slider) return;
+        if (direction > 0) slider.stepUp();
+        else slider.stepDown();
+        updateZoom();
+    }
+
+    // ============================================================
+    // 5. MÉTÉO (COSMÉTIQUE)
+    // ============================================================
+    function updateEnvironment() {
+        const now = new Date();
+        const hour = now.getHours();
+        const decimalHour = hour + (now.getMinutes() / 60);
+
+        const options = { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const timeString = now.toLocaleDateString('fr-FR', options);
+        const clockEl = document.getElementById('live-clock');
+        if(clockEl) clockEl.innerText = timeString.charAt(0).toUpperCase() + timeString.slice(1);
+
+        const viewport = document.getElementById('city-viewport');
+        
+        if(viewport && scene) {
+            scene.classList.remove('sky-night', 'sky-dawn', 'sky-day', 'sky-dusk');
+            viewport.classList.remove('sky-night');
+
+            if (hour >= 6 && hour < 9) scene.classList.add('sky-dawn');
+            else if (hour >= 9 && hour < 18) scene.classList.add('sky-day');
+            else if (hour >= 18 && hour < 21) scene.classList.add('sky-dusk');
+            else {
+                scene.classList.add('sky-night');
+                viewport.classList.add('sky-night');
+            }
+        }
+
+        const sun = document.getElementById('the-sun');
+        const moon = document.getElementById('the-moon');
+
+        if (decimalHour >= 6 && decimalHour <= 20) {
+            const percentDay = (decimalHour - 6) / 14; 
+            const posX = 10 + (percentDay * 80);
+            const posY = 120 - (Math.sin(percentDay * Math.PI) * 100);
+            if(sun) { sun.style.left = posX + '%'; sun.style.top = posY + '%'; sun.style.opacity = '1'; }
+            if(moon) { moon.style.top = '150%'; moon.style.opacity = '0'; }
+        } else {
+            let percentNight = (decimalHour > 20) ? (decimalHour - 20) / 10 : (decimalHour + 4) / 10;
+            const posX = 10 + (percentNight * 80);
+            const posY = 100 - (Math.sin(percentNight * Math.PI) * 80);
+            if(moon) { moon.style.left = posX + '%'; moon.style.top = posY + '%'; moon.style.opacity = '1'; }
+            if(sun) { sun.style.top = '150%'; sun.style.opacity = '0'; }
+        }
+    }
+    
+    updateEnvironment();
+    setInterval(updateEnvironment, 1000);
+
+    // Fonction vide pour les notifs (si tu ne l'as pas importée)
+    function initNotificationHandlers() { /* ... */ }
+    // --- FOCUS CAMÉRA SUR UN BÂTIMENT ---
+    // --- FOCUS CAMÉRA SUR UN BÂTIMENT (VERSION CORRIGÉE) ---
+    // --- FOCUS CAMÉRA (VERSION ULTRA PRÉCISE) ---
+    function focusOnBuilding(x, y, w, h, elementId) {
+        const scene = document.querySelector('.iso-scene');
+        
+        const target = document.getElementById(elementId);
+        // ON RÉCUPÈRE LA LISTE DES OBSTACLES
+        
+        
+        if (!scene || !target) return;
+
+        // 1. On récupère les rectangles "physiques" actuels à l'écran
+        // Cela prend en compte le zoom, la rotation 3D et le scroll actuel
+        const sceneRect = scene.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+
+        // 2. On calcule le centre de la scène (la fenêtre de vision)
+        const sceneCenterX = sceneRect.left + (sceneRect.width / 2);
+        const sceneCenterY = sceneRect.top + (sceneRect.height / 2);
+
+        // 3. On calcule le centre de l'élément cible
+        const targetCenterX = targetRect.left + (targetRect.width / 2);
+        const targetCenterY = targetRect.top + (targetRect.height / 2);
+
+        // 4. On calcule la différence (L'écart à corriger)
+        const diffX = targetCenterX - sceneCenterX;
+        const diffY = targetCenterY - sceneCenterY;
+
+        // 5. On applique le scroll
+        // On prend la position actuelle de scroll et on ajoute juste la différence
+        scene.scrollTo({
+            left: scene.scrollLeft + diffX,
+            top: scene.scrollTop + diffY,
+            behavior: 'smooth'
+        });
+
+        // 6. Effet visuel (Focus)
+        target.classList.remove('building-focus');
+        void target.offsetWidth; // Reset anim
+        target.classList.add('building-focus');
+        setTimeout(() => target.classList.remove('building-focus'), 1000);
+    }
+
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --map-width: {{ ville.largeur_map }};  
+        --map-height: {{ ville.hauteur_map }}; 
+    }
+
+    /* Quand le mode route est activé sur la scène */
+    .iso-scene.road-active .iso-grid {
+        pointer-events: auto !important; /* REND LA GRILLE CLIQUABLE */
+        z-index: 50; /* On la monte un peu pour être sûr de capter le clic */
+        cursor: crosshair; /* Curseur de visée pour le style */
+    }
+
+    /* Petit effet au survol pour savoir quelle case on vise */
+    .iso-scene.road-active .grid-cell:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    /* ============================================== */
+    /* FIX CURSEUR : NETTOYAGE DU MODE ÉDITION        */
+    /* ============================================== */
+    
+    /* Quand la classe .road-active est présente sur la scène... */
+    .iso-scene.road-active .iso-building, 
+    .iso-scene.road-active .building-link,
+    .iso-scene.road-active img {
+        /* 1. On force le curseur à suivre celui de la grille (Croix ou Interdit) */
+        cursor: inherit !important; 
+        
+        /* 2. On rend les bâtiments "transparents" aux clics */
+        /* C'est la grille au-dessus qui prendra 100% des clics */
+        pointer-events: none !important; 
+    }
+    /* --- LÉGENDE FLOTTANTE (STYLE ARCHITECTE) --- */
+.controls-legend {
+    position: absolute; /* <--- CHANGEMENT ICI (était fixed) */
+    top: 20px;
+    right: 30px;     /* Collé à droite avec une marge */
+    width: 200px;
+    
+    /* STYLE PAPIER / BEIGE CASSÉ */
+    background-color: #fdfbf7; /* Beige très doux (Coquille d'oeuf) */
+    color: #4b5563; /* Gris anthracite pro */
+    
+    /* Bordure technique */
+    border: 1px solid #e5e7eb;
+    border-left: 5px solid #d97706; /* Accent Orange Chantier */
+    border-radius: 4px; /* Coins peu arrondis pour faire "pro" */
+    
+    /* Ombre portée douce */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    
+    padding: 0;
+    z-index: 1000; /* Au-dessus de tout */
+    
+    /* Animation d'entrée */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(50px); /* Arrive de la droite */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Effet ressort */
+    
+    /* Typo style technique */
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+}
+
+/* État visible (activé par JS) */
+.controls-legend.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* En-tête du post-it */
+.legend-header {
+    background-color: rgba(217, 119, 6, 0.1); /* Fond orange très léger */
+    padding: 12px 15px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #b45309;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* Liste des commandes */
+.controls-legend ul {
+    padding: 15px;
+    margin: 0;
+}
+
+.controls-legend li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.controls-legend li:last-child { margin-bottom: 0; }
+
+/* Les touches clavier */
+.key-badge {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-bottom: 2px solid #9ca3af; /* Effet touche 3D */
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #374151;
+    min-width: 24px;
+    text-align: center;
+}
+
+.legend-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* --- ADAPTATION DARK MODE --- */
+[data-theme="dark"] .controls-legend {
+    background-color: #27272a; /* Gris zinc foncé */
+    border-color: #3f3f46;
+    border-left-color: #fbbf24; /* Jaune plus vif */
+    color: #e4e4e7;
+}
+[data-theme="dark"] .legend-header {
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border-bottom-color: #3f3f46;
+}
+[data-theme="dark"] .key-badge {
+    background: #3f3f46;
+    border-color: #52525b;
+    border-bottom-color: #000;
+    color: #fbbf24;
+}
+
+/* --- BOUTONS OUTILS (Toolbar) --- */
+.btn-tool {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Effet rebond */
+    background-color: #f3f4f6; /* Gris clair par défaut */
+    color: #4b5563; /* Gris foncé */
+    position: relative;
+}
+
+/* Hover (Survol) */
+.btn-tool:hover {
+    transform: translateY(-3px) scale(1.1);
+    background-color: #e5e7eb;
+}
+
+/* --- ÉTATS ACTIFS (Couleurs Modernes) --- */
+
+/* 1. ROUTE DROITE : Indigo Profond */
+.btn-tool.active-road {
+    background-color: #4f46e5; /* Indigo-600 */
+    color: white;
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.5); /* Glow */
+    transform: scale(1.1);
+}
+
+/* 2. VIRAGE : Violet Électrique */
+.btn-tool.active-corner {
+    background-color: #8b5cf6; /* Violet-500 */
+    color: white;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5); /* Glow */
+    transform: scale(1.1);
+}
+
+/* 3. GOMME : Rose/Rouge Vibrant */
+.btn-tool.active-delete {
+    background-color: #f43f5e; /* Rose-500 */
+    color: white;
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.5); /* Glow */
+    transform: scale(1.1);
+}
+
+/* Enlever le contour bleu moche du clic */
+.btn-tool:focus {
+    box-shadow: none;
+}
+
+/* --- ANNUAIRE (LOCATOR) --- */
+.building-locator {
+    position: absolute; /* <--- CHANGEMENT ICI (était fixed) */
+    top: 20px;
+    left: 20px; /* À gauche cette fois */
+    width: 220px;
+    max-height: 560px; /* On peut augmenter un peu car la carte fait 600px de haut */
+    
+    background-color: #fdfbf7; 
+    color: #4b5563;
+    
+    border: 1px solid #e5e7eb;
+    border-left: 5px solid #4f46e5; /* Accent Indigo pour différencier de la légende orange */
+    border-radius: 4px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Pour l'arrondi */
+}
+
+/* Zone de liste scrollable */
+    .locator-list {
+        overflow-y: auto; /* Scroll vertical */
+        flex-grow: 1;
+        max-height: 100%; /* Prend toute la hauteur dispo */
+        
+        /* Espace pour ne pas que le texte touche la barre */
+        padding-right: 5px; 
+        
+        /* 1. Scrollbar Firefox */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0,0,0,0.2) transparent;
+    }
+
+    /* 2. Scrollbar Webkit (Chrome, Edge, Safari) */
+    .locator-list::-webkit-scrollbar { 
+        width: 6px; /* Très fine */
+    }
+    
+    /* Le fond de la barre (Le fameux carré blanc à supprimer) */
+    .locator-list::-webkit-scrollbar-track { 
+        background: transparent; /* TOTALEMENT INVISIBLE */
+    }
+    
+    /* Le petit ascenseur qui bouge */
+    .locator-list::-webkit-scrollbar-thumb { 
+        background-color: rgba(0, 0, 0, 0.15); /* Gris très léger */
+        border-radius: 10px; /* Tout rond */
+    }
+    
+    /* Interaction au survol de la barre */
+    .locator-list::-webkit-scrollbar-thumb:hover { 
+        background-color: rgba(0, 0, 0, 0.3); 
+    }
+
+    /* --- ADAPTATION DARK MODE --- */
+    /* Pour que la barre soit visible (mais discrète) sur fond sombre */
+    [data-theme="dark"] .locator-list {
+        scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    [data-theme="dark"] .locator-list::-webkit-scrollbar-thumb { 
+        background-color: rgba(255, 255, 255, 0.15); /* Blanc transparent */
+    }
+    [data-theme="dark"] .locator-list::-webkit-scrollbar-thumb:hover { 
+        background-color: rgba(255, 255, 255, 0.3); 
+    }
+
+/* Un élément de la liste */
+.locator-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.locator-item:hover {
+    background-color: rgba(79, 70, 229, 0.05); /* Indigo très clair */
+}
+
+.locator-icon {
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.locator-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        /* AJOUTS POUR LA SÉCURITÉ DU TEXTE */
+        overflow: hidden; 
+        white-space: nowrap; /* Empêche le retour à la ligne */
+        max-width: 140px;    /* Force la coupure si trop long */
+    }
+
+/* Dark Mode */
+[data-theme="dark"] .building-locator {
+    background-color: #27272a;
+    border-color: #3f3f46;
+    border-left-color: #6366f1; /* Indigo plus clair */
+    color: #e4e4e7;
+}
+[data-theme="dark"] .locator-item { border-bottom-color: #3f3f46; }
+[data-theme="dark"] .locator-item:hover { background-color: rgba(99, 102, 241, 0.1); }
+
+@media (min-width: 1500px) {
+        
+        /* 1. L'ANNUAIRE (Gauche) */
+        .building-locator {
+            /* On le pousse à gauche, en dehors de la carte */
+            /* -240px = Largeur du menu (220) + Marge (20) */
+            left: -240px !important; 
+            
+            /* On le colle en haut aligné avec la carte */
+            top: 0 !important; 
+            
+            /* Esthétique : On arrondit le coin gauche pour faire joli */
+            border-radius: 8px 0 0 8px !important;
+            border-right: none !important; /* On enlève la bordure qui touche la carte */
+            
+            /* Optionnel : Lui faire prendre toute la hauteur */
+            height: 100%; 
+            max-height: none !important;
+        }
+
+        /* 2. LE GUIDE (Droite) */
+        .controls-legend {
+            /* On le pousse à droite, en dehors de la carte */
+            /* -220px = Largeur du menu (200) + Marge (20) */
+            right: -220px !important;
+            
+            top: 0 !important;
+            border-radius: 0 8px 8px 0 !important;
+            border-left: none !important;
+        }
+    }
+
+    /* --- ANIMATION DE FOCUS (CORRIGÉE) --- */
+
+/* La classe qu'on ajoutera en JS */
+.building-focus .building-sprite {
+    animation: focusPulse 0.8s ease-in-out;
+    z-index: 1000; /* Passe au premier plan pendant l'animation */
+}
+
+@keyframes focusPulse {
+    0% {
+        /* État initial (identique au style de base) */
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.6);
+        filter: brightness(1);
+    }
+    50% {
+        /* État "Focus" : On grossit un peu et on illumine */
+        /* On garde EXACTEMENT les mêmes rotations pour ne pas aplatir */
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.9); 
+        filter: brightness(1.3) drop-shadow(0 0 15px #fbbf24); /* Halo Doré */
+    }
+    100% {
+        /* Retour à la normale */
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.6);
+        filter: brightness(1);
+    }
+}
+
+/* Quand on est en mode déplacement, la grille doit passer AU-DESSUS des routes */
+.iso-scene.moving-mode .iso-grid {
+    pointer-events: auto !important;
+    z-index: 100 !important; /* Force la grille au premier plan */
+}
+
+.iso-scene.moving-mode .grid-cell {
+    cursor: pointer; /* Indique qu'on peut cliquer */
+}
+</style>
+{% endblock %}
