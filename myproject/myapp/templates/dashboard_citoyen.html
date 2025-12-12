@@ -86,12 +86,24 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="stat-tile stat-happy"> 
-                <div class="stat-icon"><i class="fas fa-smile"></i></div>
-                <div class="stat-content">
-                    <h2>{{ citoyen.bonheur }} <small class="fs-6 text-muted">%</small></h2>
-                    <p>Bonheur général</p>
+            <div class="stat-tile stat-happy d-flex justify-content-between align-items-center pe-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon"><i class="fas fa-smile"></i></div>
+                    <div class="stat-content">
+                        <h2>{{ citoyen.bonheur }} <small class="fs-6 text-muted">%</small></h2>
+                        <p>Bonheur général</p>
+                    </div>
                 </div>
+                
+                <form action="{% url 'organiser_soiree' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-circle" 
+                            style="width: 40px; height: 40px;" 
+                            title="Organiser une soirée (200€)"
+                            onclick="return confirm('Organiser une petite fête privée pour 200€ ? (+10 Bonheur)');">
+                        <i class="fas fa-glass-cheers"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -448,41 +460,78 @@
                     </div>
                 </div>
                 
-                <div class="card border-0 shadow-lg overflow-hidden">
-                    <div class="card-body p-0 position-relative" id="city-viewport">
-                        <div class="iso-scene" id="cityScene">
-                            <div id="the-sun" class="celestial-body sun"></div>
-                            <div id="the-moon" class="celestial-body moon"></div>
-                            
-                            <div class="iso-map">
-                                <div class="iso-grid"></div>
-    
-                                {% load static %} 
-                                {% for bat in ville.batiments.all %}
-                                    <a href="{% url 'batiment_detail' bat.id %}" 
-                                    class="iso-building building-link" 
-                                    data-bat-name="{{ bat.nom }}"
-                                    style="
-                                        left: calc(var(--cell-size) * {{ bat.x }}); 
-                                        top: calc(var(--cell-size) * {{ bat.y }});
-                                        width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
-                                        height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px);
-                                        z-index: {{ bat.y|add:bat.hauteur|add:10 }};
-                                        /* ON A ENLEVÉ LE STYLE D'OPACITÉ ICI POUR ÉVITER L'APLATISSEMENT */
-                                    ">
+                <div class="d-flex gap-3 align-items-stretch" style="height: 600px;">
+                
+                    <div class="card border-0 shadow-lg overflow-hidden flex-grow-1 h-100">
+                        <div class="card-body p-0 position-relative h-100" id="city-viewport">
+                            <div class="iso-scene h-100" id="cityScene">
+                                <div id="the-sun" class="celestial-body sun"></div>
+                                <div id="the-moon" class="celestial-body moon"></div>
+                                
+                                <div class="iso-map">
+                                    <div class="iso-grid"></div>
+        
+                                    {% load static %} 
+                                    {% for bat in ville.batiments.all %}
                                         
-                                        <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
-                                            alt="{{ bat.type_batiment }}"
-                                            class="building-sprite"
-                                            style="{% if bat == moving_batiment %}opacity: 0.6; filter: grayscale(100%) brightness(1.2);{% endif %}"
-                                            onerror="this.src='https://via.placeholder.com/150?text=IMG'">
+                                        {% if bat.type_batiment == 'ROUTE' or bat.type_batiment == 'ROUTE_VIRAGE' %}
+                                            <div id="bat-{{ bat.id }}" class="iso-building" 
+                                                style="left: calc(var(--cell-size) * {{ bat.x }}); top: calc(var(--cell-size) * {{ bat.y }}); width: calc(var(--cell-size) * {{ bat.largeur }}); height: calc(var(--cell-size) * {{ bat.hauteur }}); z-index: 1; pointer-events: none;">
+                                                {% if bat.type_batiment == 'ROUTE' %}<div class="road-tile" style="transform: rotate({{ bat.rotation }}deg);"></div>
+                                                {% else %}<div class="road-corner" style="transform: rotate({{ bat.rotation }}deg);"></div>{% endif %}
+                                            </div>
+                                        {% else %}
+                                        <a href="{% url 'batiment_detail' bat.id %}" 
+                                           id="bat-{{ bat.id }}"  class="iso-building building-link" 
+                                           data-bat-name="{{ bat.nom }}"
+                                           style="
+                                            left: calc(var(--cell-size) * {{ bat.x }}); 
+                                            top: calc(var(--cell-size) * {{ bat.y }}); 
+                                            width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
+                                            height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px); 
+                                            z-index: {{ bat.y|add:bat.hauteur|add:10 }};">
                                             
-                                        <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
-                                    </a>
-                                {% endfor %}
+                                            <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
+                                                 alt="{{ bat.type_batiment }}" 
+                                                 class="building-sprite" 
+                                                 onerror="this.src='https://via.placeholder.com/150?text=IMG'">
+                                            <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
+                                        </a>
+                                    {% endif %}
+
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="building-locator citizen-locator d-none d-xl-flex flex-column bg-white shadow-sm border rounded">
+                        <div class="legend-header bg-light border-bottom p-3 fw-bold text-primary">
+                            <i class="fas fa-map-signs me-2"></i> Lieux Publics
+                        </div>
+                        <div class="locator-list p-0 flex-grow-1 overflow-auto">
+                            {% for bat in ville.batiments.all %}
+                                {% if bat.type_batiment != 'ROUTE' and bat.type_batiment != 'ROUTE_VIRAGE' %}
+                                    <div class="locator-item p-2 border-bottom d-flex align-items-center" 
+                                        onclick="focusOnBuilding({{ bat.x }}, {{ bat.y }}, {{ bat.largeur }}, {{ bat.hauteur }}, 'bat-{{ bat.id }}')"
+                                        style="cursor: pointer;">
+                                        <div class="locator-icon me-2 text-center" style="width: 30px;">
+                                            {% if bat.type_batiment == 'MAIRIE' %}<i class="fas fa-landmark text-primary"></i>
+                                            {% elif bat.type_batiment == 'HOPITAL' %}<i class="fas fa-hospital text-danger"></i>
+                                            {% elif bat.type_batiment == 'COMMERCE' %}<i class="fas fa-store text-success"></i>
+                                            {% elif bat.type_batiment == 'USINE' %}<i class="fas fa-industry text-secondary"></i>
+                                            {% else %}<i class="fas fa-building text-muted"></i>{% endif %}
+                                        </div>
+                                        <div class="locator-info lh-1">
+                                            <div class="fw-bold text-dark small">{{ bat.nom|truncatechars:18 }}</div>
+                                            <span class="text-muted" style="font-size: 0.65rem;">{{ bat.get_type_batiment_display }}</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -516,6 +565,52 @@
         initNotificationHandlers();
         loadZoomState();
     });
+
+// --- FOCUS CAMÉRA SIMPLE (POUR CITOYEN) ---
+    // --- FOCUS CAMÉRA (VERSION CITOYEN AVEC EFFET GLOW) ---
+    function focusOnBuilding(x, y, w, h, elementId) {
+        const scene = document.querySelector('.iso-scene');
+        const target = document.getElementById(elementId);
+        
+        if (!scene || !target) return;
+
+        // 1. Calculs des positions (Pour centrer la caméra)
+        const sceneRect = scene.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+
+        const sceneCenterX = sceneRect.left + (sceneRect.width / 2);
+        const sceneCenterY = sceneRect.top + (sceneRect.height / 2);
+        const targetCenterX = targetRect.left + (targetRect.width / 2);
+        const targetCenterY = targetRect.top + (targetRect.height / 2);
+
+        const diffX = targetCenterX - sceneCenterX;
+        const diffY = targetCenterY - sceneCenterY;
+
+        // 2. Scroll fluide vers la cible
+        scene.scrollTo({
+            left: scene.scrollLeft + diffX,
+            top: scene.scrollTop + diffY,
+            behavior: 'smooth'
+        });
+
+        // 3. EFFET VISUEL (LE GLOW + LE POP-OUT)
+        // A. On sauvegarde le z-index actuel (la "profondeur" normale)
+        const originalZ = target.style.zIndex; 
+        
+        // B. On force le bâtiment à passer AU-DESSUS de tout le monde (5000)
+        target.style.zIndex = 5000; 
+
+        // C. On relance l'animation CSS
+        target.classList.remove('building-focus');
+        void target.offsetWidth; // Astuce pour forcer le redémarrage de l'anim
+        target.classList.add('building-focus');
+        
+        // D. Une fois l'animation finie (1 seconde), on remet tout comme avant
+        setTimeout(() => { 
+            target.classList.remove('building-focus');
+            target.style.zIndex = originalZ; // Retour à sa place normale
+        }, 1000);
+    }
 
     function initNotificationHandlers() {
         // --- 1. GESTION SUPPRESSION UNITAIRE (AJAX) ---
@@ -844,5 +939,69 @@ function loadZoomState() {
         cursor: pointer;
         z-index: 100000 !important;
     }
+
+    .citizen-locator {
+        /* On annule le positionnement absolu */
+        position: static !important; 
+        
+        /* Dimensions */
+        width: 240px; /* Largeur fixe pour la colonne de droite */
+        height: 100% !important; /* Prend toute la hauteur du conteneur (600px) */
+        
+        /* Style */
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        /* Pas de z-index nécessaire ici car il est dans le flux normal */
+    }
+
+    /* Scroll interne de la liste */
+    .citizen-locator .locator-list {
+        overflow-y: auto;
+    }
+    
+    /* Effet survol sur les items */
+    .locator-item:hover {
+        background-color: #f3f4f6;
+    }
+
+    /* Adaptation Dark Mode */
+    [data-theme="dark"] .citizen-locator {
+        background-color: #1e293b; /* Gris foncé */
+        border-color: #374151;
+        color: #f3f4f6;
+    }
+    [data-theme="dark"] .citizen-locator .legend-header {
+        background-color: #0f172a !important; /* Encore plus foncé pour le header */
+        border-bottom-color: #374151 !important;
+    }
+    [data-theme="dark"] .locator-item {
+        border-bottom-color: #374151 !important;
+    }
+    [data-theme="dark"] .locator-item:hover {
+        background-color: #334155;
+    }
+    [data-theme="dark"] .text-dark {
+        color: #f3f4f6 !important;
+    }
+    /* --- ANIMATION DE FOCUS --- */
+.building-focus .building-sprite {
+    animation: focusPulse 0.8s ease-in-out;
+    /* Le z-index ici ne suffit pas, c'est pour ça qu'on le change en JS sur le parent */
+}
+
+@keyframes focusPulse {
+    0% {
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.6);
+        filter: brightness(1);
+    }
+    50% {
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.9); 
+        filter: brightness(1.3) drop-shadow(0 0 15px #fbbf24); /* Halo Doré */
+    }
+    100% {
+        transform: translateX(-80%) rotateZ(45deg) rotateX(-60deg) scale(1.6);
+        filter: brightness(1);
+    }
+}
 </style>
 {% endblock %}

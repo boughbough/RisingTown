@@ -152,12 +152,16 @@
                                         <i class="fas fa-pen"></i>
                                     </a>
                                     
-                                    <a href="{% url 'supprimer_citoyen_admin' c.id %}" 
-                                       class="btn btn-sm btn-light border text-danger" 
-                                       title="Bannir"
-                                       onclick="return confirm('Êtes-vous sûr de vouloir bannir {{ c.prenom }} définitivement ?');">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    {% if not c.compte.is_superuser %}
+                                        <form action="{% url 'bannir_citoyen' c.id %}" method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" 
+                                                    class="btn btn-sm btn-light border text-danger" 
+                                                    title="Bannir et Destituer (Poste vacant)"
+                                                    onclick="return confirm('ATTENTION : Bannir {{ c.prenom }} ?\n\n- Son compte sera désactivé.\n- Il sera viré de son poste de directeur.\n- Il ne pourra plus se connecter.');">
+                                                <i class="fas fa-gavel"></i> </button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

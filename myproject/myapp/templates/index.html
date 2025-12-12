@@ -235,6 +235,13 @@
                         </button>
                     </form>
 
+                    <form action="{% url 'organiser_fete' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-soft btn-fun" onclick="return confirm('Organiser une fête pour 5000€ ? (+15 Bonheur)');">
+                            <i class="fas fa-icons"></i> Festival
+                        </button>
+                    </form>
+
                     <div class="vr mx-2 opacity-25"></div>
 
                     <a href="{% url 'gestion_citoyens' %}" class="btn btn-light border shadow-sm rounded-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" title="Citoyens">
@@ -1479,6 +1486,17 @@
 
 .iso-scene.moving-mode .grid-cell {
     cursor: pointer; /* Indique qu'on peut cliquer */
+}
+/* 4. Festival : Rose / Fuchsia */
+.btn-fun {
+    background-color: #db2777; /* Rose profond */
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(219, 39, 119, 0.35);
+}
+.btn-fun:hover {
+    background-color: #be185d;
+    box-shadow: 0 8px 25px rgba(219, 39, 119, 0.6);
+    transform: translateY(-3px);
 }
 </style>
 {% endblock %}

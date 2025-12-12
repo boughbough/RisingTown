@@ -158,9 +158,6 @@ def dashboard(request):
     ville = Ville.objects.first()
     
     # 1. On s'assure que le Maire a un profil citoyen
-    # (Assure-toi que cette fonction existe bien dans ton utils.py ou views.py)
-    # Si elle est définie dans ce fichier, pas besoin d'import.
-    # Sinon, importez-la. Pour l'exemple, on suppose qu'elle renvoie le profil ou None.
     try:
         moi = request.user.profil_citoyen
     except:
@@ -189,10 +186,6 @@ def dashboard(request):
         citoyens = Citoyen.objects.filter(ville=ville)
         total_pop = citoyens.count()
         
-        # === CORRECTION MAJEURE ICI ===
-        # On récupère les chômeurs, MAIS on exclut le Maire et l'Adjoint
-        # car ils ont déjà un travail (diriger la ville)
-        # === CORRECTION : ON FILTRE PAR LE NOM ===
         # On cherche ceux sans travail, en excluant ceux qui s'appellent "Maire" ou "Adjoint"
         candidats_recrutement = citoyens.filter(lieu_travail__isnull=True).exclude(
             Q(nom='Maire') | Q(nom='Adjoint')
@@ -215,7 +208,7 @@ def dashboard(request):
         # --- LOGIQUE DEPLACEMENT & EVENEMENTS ---
         empty_spots = [] 
         moving_batiment = None 
-        evenement_du_jour = None
+        evenement_du_jour = None # <--- INITIALISATION ICI
         move_id = request.GET.get('move_id')
         
         if move_id and request.user.is_superuser:
@@ -246,19 +239,38 @@ def dashboard(request):
             except Batiment.DoesNotExist:
                 pass
         
-        # Si on ne déplace rien, on génère un événement aléatoire (si la fonction existe)
+        # Si on ne déplace rien, on génère un événement aléatoire
         elif not move_id:
-             # Assure-toi que cette fonction est importée ou définie
-             # evenement_du_jour = generer_evenement_aleatoire(ville) 
+             # evenement_du_jour = generer_evenement_aleatoire(ville) # Décommente si tu as la fonction
              pass 
         
+        # =================================================================
+        # 🚨 C'EST ICI QU'ON PLACE LA RÉVOLTE (APRÈS TOUT LE RESTE) 🚨
+        # =================================================================
+        # Elle écrase l'événement aléatoire si la situation est critique
+        
+        print(f"DEBUG ALERTE: Bonheur={bonheur_moyen}, Pop={total_pop}") # Debug console
+        
+        if bonheur_moyen < 30 and total_pop > 0:
+            print("DEBUG: CA RENTRE DANS LA REVOLTE !!!")
+            
+            perte_argent = 500 * total_pop
+            ville.budget -= perte_argent
+            ville.save()
+            
+            evenement_du_jour = {
+                'titre': 'ÉMEUTES EN VILLE ! 🔥',
+                'message': f"Le bonheur est catastrophique ({bonheur_moyen}%). Les citoyens cassent tout ! Dégâts : -{perte_argent} €.",
+                'type': 'danger', 
+                'icone': 'fa-fire'
+            }
+        # =================================================================
+
 
         # 1. GÉNÉRER LA LISTE DES OBSTACLES POUR LE JS
         obstacles_data = []
         if request.user.is_superuser: # Seul le maire a besoin de ça
             for b in ville.batiments.all():
-                # Si on est en train de déplacer un bâtiment, on ne l'ajoute pas aux obstacles
-                # (sinon il entrerait en collision avec sa propre ancienne position)
                 if moving_batiment and b.id == moving_batiment.id:
                     continue
                     
@@ -272,7 +284,7 @@ def dashboard(request):
         return render(request, 'index.html', {
             'ville': ville,
             'total_pop': total_pop,
-            'chomeurs': nb_chomeurs,      # Variable corrigée
+            'chomeurs': nb_chomeurs,
             'taux_chomage': taux_chomage,
             'sdf': sdf,
             'taux_sdf': taux_sdf,
@@ -282,9 +294,7 @@ def dashboard(request):
             'empty_spots': empty_spots,
             'moving_batiment': moving_batiment,
             'evenement': evenement_du_jour,
-            
-            # INDISPENSABLE POUR LE RECRUTEMENT :
-            'candidats_recrutement': candidats_recrutement,  # Comma added here
+            'candidats_recrutement': candidats_recrutement,
             'obstacles_json': json.dumps(obstacles_data),
         })
     
@@ -298,17 +308,10 @@ def dashboard(request):
             
             # Filtre des notifications
             for c in all_candidatures:
-                # 🔴 C'ÉTAIT ICI LE PROBLÈME 🔴
-                # Avant : if c.statut == 'REFUSEE' and not c.initiateur_est_citoyen: continue
-                
-                # CORRECTION : On cache "REFUSEE" SEULEMENT SI ce n'est pas une sanction policière
                 if c.statut == 'REFUSEE' and not c.initiateur_est_citoyen and "SANCTION" not in c.message:
                     continue
-                
-                # On cache les démissions (car on le sait déjà)
                 if c.statut == 'DEMISSION': 
                     continue
-                    
                 notifications_visibles.append(c)
             
             ids_candidatures = list(citoyen.candidatures.filter(statut='EN_ATTENTE').values_list('batiment_id', flat=True))
@@ -1318,14 +1321,18 @@ def supprimer_actualite(request, id_actu):
 @login_required
 def verser_salaires(request):
     """Le Maire paye les salaires, collecte loyers/parking et notifie tout le monde"""
+    
     if not request.user.is_superuser:
+        messages.error(request, "Accès refusé.")
         return redirect('dashboard')
         
     ville = Ville.objects.first()
     mairie = Batiment.objects.filter(ville=ville, type_batiment='MAIRIE').first()
     
-    # --- 1. SYSTÈME DE LOGS (Pour cumuler les infos par citoyen) ---
-    # Structure : { citoyen_id: { 'obj': citoyen, 'lignes': [] } }
+    # On vérifie UNE SEULE FOIS si un hôpital est actif (pour optimiser)
+    hopital_actif = Batiment.objects.filter(ville=ville, type_batiment='HOPITAL').exists()
+    
+    # --- 1. SYSTÈME DE LOGS ---
     bilans_citoyens = {}
 
     def ajouter_ligne(citoyen, texte):
@@ -1334,30 +1341,27 @@ def verser_salaires(request):
         bilans_citoyens[citoyen.id]['lignes'].append(texte)
 
     # =================================================
-    # 2. SALAIRES (HIÉRARCHIE & MÉRITOCRATIE)
+    # 2. SALAIRES
     # =================================================
     travailleurs = Citoyen.objects.filter(ville=ville, lieu_travail__isnull=False)
     total_salaires = 0
     
     for c in travailleurs:
-        salaire_net = 100 # Base
+        salaire_net = 100
         details_grade = "Employé"
         
         if c.compte:
-            if c.compte.is_directeur:
+            if getattr(c.compte, 'is_directeur', False):
                 salaire_net = 250
                 details_grade = "Directeur"
-            if c.compte.is_adjoint:
+            if getattr(c.compte, 'is_adjoint', False):
                 salaire_net += 50
                 details_grade += " + Adjoint"
         
         if ville.budget >= salaire_net:
             ville.budget -= salaire_net
             c.argent += salaire_net
-            c.save()
             total_salaires += salaire_net
-            
-            # LOG
             ajouter_ligne(c, f"💰 Salaire ({details_grade}) : +{salaire_net} €")
     
     # =================================================
@@ -1367,7 +1371,7 @@ def verser_salaires(request):
         ville=ville, 
         lieu_travail__isnull=True,
         est_en_prison=False
-    ).exclude(Q(compte__is_superuser=True) | Q(compte__is_adjoint=True))
+    ).exclude(Q(nom='Maire') | Q(nom='Adjoint'))
     
     total_rsa = 0
     alloc_rsa = 40
@@ -1376,10 +1380,7 @@ def verser_salaires(request):
         if ville.budget >= alloc_rsa:
             ville.budget -= alloc_rsa
             c.argent += alloc_rsa
-            c.save()
             total_rsa += alloc_rsa
-            
-            # LOG
             ajouter_ligne(c, f"🛡️ Aide Sociale (RSA) : +{alloc_rsa} €")
 
     # =================================================
@@ -1390,28 +1391,20 @@ def verser_salaires(request):
     now = timezone.now()
     
     for l in locataires:
-        loyer = l.lieu_vie.loyer
+        loyer = getattr(l.lieu_vie, 'loyer', 50)
         
         if l.argent >= loyer:
             l.argent -= loyer
             total_loyers += loyer
             l.prochain_loyer = now + timedelta(days=1)
-            l.save()
-            
-            # LOG
             ajouter_ligne(l, f"🏠 Loyer ({l.lieu_vie.nom}) : -{loyer} €")
-        
         else:
-            # Expulsion (Cas critique, notification séparée gérée en bas mais on logue l'échec)
             nom_logement = l.lieu_vie.nom
             batiment_logement = l.lieu_vie
-            
             l.lieu_vie = None
             l.prochain_loyer = None
-            l.bonheur = max(0, l.bonheur - 20)
-            l.save()
+            l.bonheur -= 20 
             
-            # Notification SPÉCIALE (Rouge) pour l'expulsion car c'est grave
             Candidature.objects.create(
                 citoyen=l,
                 batiment=batiment_logement,
@@ -1419,6 +1412,7 @@ def verser_salaires(request):
                 initiateur_est_citoyen=False,
                 message=f"🚫 EXPULSION IMMÉDIATE\nLoyer impayé de {loyer} €."
             )
+            ajouter_ligne(l, f"⚠️ EXPULSÉ de {nom_logement} (Impayé)")
 
     # =================================================
     # 5. COLLECTE PARKING
@@ -1427,69 +1421,83 @@ def verser_salaires(request):
     parking = Batiment.objects.filter(ville=ville, type_batiment='PARKING').first()
     
     if parking:
-        tarif = parking.production_argent
+        tarif = getattr(parking, 'production_argent', 10)
         automobilistes = Citoyen.objects.filter(ville=ville, vehicule=True)
         
         for auto in automobilistes:
             if auto.argent >= tarif:
                 auto.argent -= tarif
                 total_parking += tarif
-                
-                # LOG
                 ajouter_ligne(auto, f"🅿️ Stationnement : -{tarif} €")
             else:
-                auto.bonheur = max(0, auto.bonheur - 2)
+                auto.bonheur -= 2
                 ajouter_ligne(auto, f"⚠️ Impayé Parking (Amende morale)")
-            auto.save()
 
-    # Enregistrement budget ville
     ville.budget += total_loyers + total_parking
     ville.save()
 
     # =================================================
-    # 6. TEMPS & SANTÉ (Cycle de vie)
+    # 6. TEMPS, SANTÉ & BONHEUR (Cycle de vie)
     # =================================================
     all_citoyens = Citoyen.objects.filter(ville=ville)
     
     for c in all_citoyens:
-        perte_sante = 5
-        # Accident aléatoire
-        if random.randint(1, 20) == 1:
-            perte_sante += 10
-            ajouter_ligne(c, "📉 Accident mineur : -10 Santé") # On ajoute au log
+        
+        # --- A. SANTÉ DYNAMIQUE (Nouveau !) ---
+        variation_sante = -5 # Fatigue naturelle de base
+        
+        # S'il y a un hôpital en ville, on compense la fatigue (+6)
+        # Résultat net : +1 (légère guérison)
+        if hopital_actif:
+            variation_sante += 6
             
-        c.sante = max(0, c.sante - perte_sante)
-        c.bonheur = min(100, c.bonheur)
+        # Si on dort dans un lit, on récupère mieux (+2)
+        if c.lieu_vie:
+            variation_sante += 2
+        else:
+            # Si on dort dehors (SDF), on tombe malade (-2)
+            variation_sante -= 2
+            
+        # Accident aléatoire (5% de chance) -> Gros coup dur
+        if random.randint(1, 20) == 1:
+            variation_sante -= 10
+            ajouter_ligne(c, "📉 Accident / Maladie : -10 Santé")
+            
+        c.sante += variation_sante
+
+        # --- B. BONHEUR PASSIF (Stabilité) ---
+        gain_bonheur = 0
+        if c.lieu_travail: gain_bonheur += 1
+        if c.lieu_vie: gain_bonheur += 2
+        if not c.lieu_vie and not c.lieu_travail: gain_bonheur -= 2
+            
+        c.bonheur += gain_bonheur
+        
+        # C. SAUVEGARDE (Le modèle gère le blocage 0-100)
         c.save()
 
     # =================================================
-    # 7. ENVOI DES NOTIFICATIONS RÉCAPITULATIVES
+    # 7. ENVOI DES NOTIFICATIONS
     # =================================================
-    # C'est ici que la magie opère !
-    
     for citoyen_id, data in bilans_citoyens.items():
         citoyen = data['obj']
         lignes = data['lignes']
         
-        if lignes: # Si il s'est passé quelque chose pour lui
-            # On construit le message
+        if lignes: 
             citoyen.refresh_from_db()
             message_final = "📅 BILAN QUOTIDIEN\n" + "\n".join(lignes)
-            
-            # On ajoute le solde final pour info
             message_final += f"\n\nNouveau Solde : {citoyen.argent} €"
             
             Candidature.objects.create(
                 citoyen=citoyen,
-                batiment=mairie, # Signé par la Mairie
-                statut='VIREMENT', # Icône verte ou bleue
+                batiment=mairie,
+                statut='VIREMENT',
                 initiateur_est_citoyen=False,
                 message=message_final
             )
 
-    # Feedback Maire
     messages.success(request, 
-        f"✅ Journée terminée. Bulletins envoyés.\n"
+        f"✅ Journée terminée.\n"
         f"📉 Salaires: -{total_salaires}€ | RSA: -{total_rsa}€\n"
         f"📈 Loyers: +{total_loyers}€ | Parking: +{total_parking}€"
     )
@@ -2927,3 +2935,106 @@ def action_hopital(request, id_batiment):
                 messages.warning(request, "Campagne lancée (Gratuitement car budget insuffisant).")
 
     return redirect('batiment_detail', id_batiment=batiment.id)
+
+
+@login_required
+def organiser_fete(request):
+    if request.method == 'POST':
+        ville = Ville.objects.first()
+        
+        cout_fete = 5000
+        
+        if ville.budget >= cout_fete:
+            # 1. On paye
+            ville.budget -= cout_fete
+            ville.save()
+            
+            # 2. On augmente le bonheur de TOUS les habitants
+            citoyens = Citoyen.objects.filter(ville=ville)
+            for c in citoyens:
+                c.bonheur += 15  # Le save() du modèle gère le blocage à 100
+                c.save()
+                
+            messages.success(request, f"🎉 La fête est un succès ! Le bonheur a augmenté (+15). Budget: -{cout_fete}€")
+        else:
+            messages.error(request, "Pas assez d'argent pour organiser une fête !")
+            
+    return redirect('dashboard')
+
+@login_required
+def organiser_soiree(request):
+    try:
+        # On récupère le citoyen connecté
+        citoyen = request.user.profil_citoyen
+        cout_soiree = 200 # C'est pas cher, c'est une pizza party !
+        
+        if citoyen.argent >= cout_soiree:
+            # 1. Il paye
+            citoyen.argent -= cout_soiree
+            
+            # 2. Il gagne du bonheur (max 100)
+            # On donne un bon boost car c'est une action active
+            citoyen.bonheur += 10 
+            
+            citoyen.save()
+            messages.success(request, f"🍕 Super soirée ! Votre moral remonte (+10). Portefeuille : -{cout_soiree}€")
+        else:
+            messages.error(request, "Vous n'avez pas assez d'argent pour organiser une soirée (200€ requis).")
+            
+    except:
+        pass
+        
+    return redirect('dashboard')
+
+
+@login_required
+def bannir_citoyen(request, citoyen_id):
+    # Sécurité : Seul le Maire peut bannir
+    if not request.user.is_superuser:
+        messages.error(request, "Seul le Maire a le pouvoir de bannissement.")
+        return redirect('dashboard')
+
+    citoyen = get_object_or_404(Citoyen, id=citoyen_id)
+    
+    # Empêcher le Maire de se bannir lui-même
+    if citoyen.compte == request.user:
+        messages.error(request, "Vous ne pouvez pas vous bannir vous-même !")
+        return redirect('gestion_citoyens')
+
+    # --- 1. DESTITUTION ---
+    if citoyen.compte:
+        # On cherche le bâtiment dirigé par ce COMPTE UTILISATEUR
+        batiment_dirige = Batiment.objects.filter(responsable=citoyen.compte).first()
+        
+        if batiment_dirige:
+            nom_batiment = batiment_dirige.nom
+            
+            # On vire le directeur (Poste vacant)
+            batiment_dirige.responsable = None 
+            batiment_dirige.save()
+            
+            messages.warning(request, f"⚠️ {citoyen.prenom} a été destitué de la direction de : {nom_batiment}.")
+
+            # --- CORRECTION ICI ---
+            # L'auteur doit être un User (request.user), pas un Citoyen
+            Actualite.objects.create(
+                ville=batiment_dirige.ville,
+                titre="Poste Vacant",
+                contenu=f"Le poste de directeur de {nom_batiment} est libre suite au départ de l'ancien responsable.",
+                auteur=request.user  # <-- C'est ça qui bloquait !
+            )
+
+    # --- 2. BANNISSEMENT (Désactivation) ---
+    if citoyen.compte:
+        user_account = citoyen.compte
+        user_account.is_active = False # Désactive le compte (Empêche la connexion)
+        user_account.save()
+        
+        # On vide ses infos dans le jeu (Chômage + SDF)
+        citoyen.lieu_travail = None
+        citoyen.lieu_vie = None
+        citoyen.save()
+
+    messages.success(request, f"⛔ {citoyen.prenom} {citoyen.nom} a été banni et son compte désactivé.")
+    
+    return redirect('gestion_citoyens')

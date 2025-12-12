@@ -99,23 +99,41 @@ class Citoyen(models.Model):
     prenom = models.CharField(max_length=50)
     age = models.IntegerField(default=18)
     lieu_travail = models.ForeignKey(Batiment, on_delete=models.SET_NULL, null=True, blank=True, related_name="employes")
+    
+    # Stats vitales
     sante = models.IntegerField(default=100)
     bonheur = models.IntegerField(default=100)
-    # Dans la classe Citoyen
-    epargne = models.IntegerField(default=0) # Argent à la banque (à l'abri du vol et des impôts)
+    
+    # Finances & Vie
+    epargne = models.IntegerField(default=0) # Argent à la banque
+    argent = models.IntegerField(default=0)  # Porte-monnaie
+    
     lieu_vie = models.ForeignKey(
         Batiment, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
-        related_name="locataires" # Pour faire batiment.locataires.all()
+        related_name="locataires"
     )
-    argent = models.IntegerField(default=0) # Porte-monnaie
-    vehicule = models.BooleanField(default=False) # A-t-il une voiture ?
+    
+    # Attributs divers
+    vehicule = models.BooleanField(default=False)
+    nom_voiture = models.CharField(max_length=100, blank=True, null=True, default="Aucune")
+    
+    # Justice & Loyer
     est_en_prison = models.BooleanField(default=False)
     date_liberation = models.DateTimeField(null=True, blank=True)
     prochain_loyer = models.DateTimeField(null=True, blank=True)
-    nom_voiture = models.CharField(max_length=100, blank=True, null=True, default="Aucune")
+
+    def save(self, *args, **kwargs):
+        # SÉCURITÉ : On bloque les valeurs entre 0 et 100 avant d'enregistrer
+        if self.bonheur < 0: self.bonheur = 0
+        if self.bonheur > 100: self.bonheur = 100
+        
+        if self.sante < 0: self.sante = 0
+        if self.sante > 100: self.sante = 100
+        
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.prenom} {self.nom}"

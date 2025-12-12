@@ -97,4 +97,7 @@ urlpatterns = [
     path('police/action/<int:id_batiment>/', views.action_police, name='action_police'),
     path('police/classer/<int:id_plainte>/', views.classer_plainte, name='classer_plainte'),
     path('hopital/action/<int:id_batiment>/', views.action_hopital, name='action_hopital'),
+    path('organiser_fete/', views.organiser_fete, name='organiser_fete'),
+    path('organiser_soiree/', views.organiser_soiree, name='organiser_soiree'),
+    path('bannir/<int:citoyen_id>/', views.bannir_citoyen, name='bannir_citoyen'),
 ]
