@@ -4,6 +4,14 @@
 
 Ce projet permet à plusieurs utilisateurs d'interagir en temps réel au sein d'une ville virtuelle persistante, en incarnant des rôles variés (Maire, Adjoint, Directeur, Citoyen) et en gérant des aspects économiques, sociaux et urbanistiques.
 
+## 🔑 Identifiants de Démonstration
+
+Pour tester rapidement les fonctionnalités sans créer de compte, utilisez ces accès pré-configurés :
+
+* 🙋 **Citoyen :** ID `lambda` / MDP `lambda`
+* 👔 **Directeur :** ID `direct` / MDP `direct`
+* 🛡️ **Adjoint :** ID `adjoint` / MDP `adjoint`
+
 ---
 
 ## 🚀 Fonctionnalités Clés
@@ -35,95 +43,9 @@ Ce projet permet à plusieurs utilisateurs d'interagir en temps réel au sein d'
 Suivez ces étapes pour lancer le projet sur votre machine.
 
 ### 1. Cloner le projet
+
 Récupérez le code source depuis le dépôt Git :
 
 ```bash
 git clone [https://github.com/boughbough/RisingTown.git](https://github.com/boughbough/RisingTown.git)
 cd RisingTown
-````
-
-### 2\. Créer l'environnement virtuel
-
-Il est nécessaire d'isoler les dépendances du projet.
-
-**Sous Windows :**
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-**Sous Mac/Linux :**
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-*(Une fois activé, vous devriez voir `(venv)` au début de votre ligne de commande).*
-
-### 3\. Installer les dépendances
-
-Installez Django et les bibliothèques requises via `pip` :
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4\. Initialiser la Base de Données
-
-Le projet est fourni avec une base de données pré-configurée, mais il est recommandé d'appliquer les migrations pour s'assurer de la cohérence du schéma :
-
-```bash
-python manage.py migrate
-```
-
-### 5\. Créer un Super-Utilisateur (Le Maire)
-
-Pour accéder à l'interface d'administration et posséder les droits de Maire dans la simulation :
-
-```bash
-python manage.py createsuperuser
-```
-
-*(Suivez les instructions pour définir un nom d'utilisateur et un mot de passe).*
-
------
-
-## ▶️ Lancement du Serveur
-
-Une fois l'installation terminée, lancez le serveur de développement :
-
-```bash
-python manage.py runserver
-```
-
-Ouvrez votre navigateur web et accédez à l'adresse suivante :
-👉 **https://www.google.com/search?q=http://127.0.0.1:8000/**
-
------
-
-## 📂 Structure du Projet
-
-  * `myapp/` : Cœur logique de l'application (Views, Models, Forms, Migrations).
-  * `myproject/` : Configuration globale (Settings, URLs, WSGI).
-  * `templates/` : Interfaces HTML (Dashboard, Carte, Login, Admin).
-  * `static/` : Fichiers statiques (CSS, Javascript, Images/Sprites).
-  * `db.sqlite3` : Base de données locale.
-  * `manage.py` : Utilitaire de gestion Django.
-
------
-
-## 👥 Auteurs
-
-Projet réalisé par l'équipe **RisingTown** (L3 MIAGE) :
-
-  * **Mohamed Boughmadi** (Architecte Logiciel & Back-End)
-  * **Mohamet Thiam** (Scrum Master & Front-End)
-  * **Djama Faiz** (Gestionnaire BDD & Intégration)
-
------
-
-*Décembre 2025 - Université Paris Nanterre*
-
-```
