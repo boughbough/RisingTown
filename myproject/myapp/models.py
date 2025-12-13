@@ -44,6 +44,7 @@ class Batiment(models.Model):
         ('PRISON', 'Prison d\'État'),
         ('ROUTE', 'Route Droite'),
         ('ROUTE_VIRAGE', 'Route Virage'), # <--- NOUVEAU
+        ('STADE', 'Stade'),
     )
 
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, related_name="batiments")

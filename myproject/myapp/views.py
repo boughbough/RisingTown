@@ -35,6 +35,7 @@ BATIMENT_SIZES = {
     'PARKING': (5, 5),
     'ROUTE': (2, 2),
     'ROUTE_VIRAGE': (2, 2), # <--- Même taille
+    'STADE': (10, 10),
     # Par défaut 1x1 pour le reste
 }
 
@@ -336,7 +337,7 @@ def construire(request):
     
     ville = Ville.objects.first()
     
-    # --- DÉFINITION DES COÛTS (DOIT CORRESPONDRE AU HTML) ---
+    # --- DÉFINITION DES COÛTS ---
     BATIMENT_COSTS = {
         'MAIRIE': 5000,
         'MAISON': 500,
@@ -349,13 +350,21 @@ def construire(request):
         'COMMISSARIAT': 3500,
         'CONCESSIONNAIRE': 500,
         'ROUTE': 10,
-        'ROUTE_VIRAGE': 10, # <--- Même prix
+        'ROUTE_VIRAGE': 10,
+        # On retire STADE de cette liste ou on le laisse, peu importe, car on bloque la création
     }
     
     if request.method == 'POST':
         form = BatimentForm(request.POST)
         if form.is_valid():
             batiment = form.save(commit=False)
+            
+            # --- 1. SÉCURITÉ ANTI-TRICHE (Backend) ---
+            if batiment.type_batiment == 'STADE':
+                messages.error(request, "Impossible de construire un autre Stade.")
+                return redirect('construire')
+            # -----------------------------------------
+
             batiment.ville = ville
             
             # 1. Définir la taille
@@ -363,18 +372,15 @@ def construire(request):
             batiment.largeur = size[0]
             batiment.hauteur = size[1]
             
-            # 2. Définir le COÛT (Correction ici)
-            # On prend le prix dans le dictionnaire, sinon 100 par défaut
+            # 2. Définir le COÛT
             batiment.cout_construction = BATIMENT_COSTS.get(batiment.type_batiment, 100)
 
             if batiment.type_batiment == 'MAISON':
                 batiment.capacite = 4
-                batiment.loyer = 50 # Loyer maison
+                batiment.loyer = 50
             elif batiment.type_batiment == 'IMMEUBLE':
                 batiment.capacite = 20
-                batiment.loyer = 20 # Loyer appart moins cher
-
-            # Vous pouvez ajouter d'autres capacités ici...
+                batiment.loyer = 20
             
             # 4. Vérification Mairie Unique
             if batiment.type_batiment == 'MAIRIE' and Batiment.objects.filter(ville=ville, type_batiment='MAIRIE').exists():
@@ -386,7 +392,7 @@ def construire(request):
                 ville.budget -= batiment.cout_construction
                 ville.save()
                 
-                # 6. SAUVEGARDE TEMPORAIRE (Hors Map)
+                # 6. SAUVEGARDE TEMPORAIRE
                 batiment.x = -10
                 batiment.y = -10
                 batiment.save()
@@ -398,6 +404,13 @@ def construire(request):
                 messages.error(request, f"Pas assez d'argent ! Il faut {batiment.cout_construction} €.")
     else:
         form = BatimentForm()
+        
+        # --- 2. FILTRAGE VISUEL (Frontend) ---
+        # C'est ICI qu'on retire le STADE de la liste déroulante
+        # On recrée la liste des choix en excluant 'STADE'
+        choices = form.fields['type_batiment'].choices
+        form.fields['type_batiment'].choices = [c for c in choices if c[0] != 'STADE']
+        # -------------------------------------
 
     return render(request, 'construire.html', {'form': form, 'ville': ville})
 
@@ -836,6 +849,14 @@ def detruire_batiment(request, id_batiment):
         return redirect('dashboard')
 
     batiment = get_object_or_404(Batiment, id=id_batiment)
+
+    # --- SÉCURITÉ STADE (AJOUT ICI) ---
+    # On protège le bâtiment s'il est de type STADE ou s'appelle "Stade Municipal"
+    if batiment.type_batiment == 'STADE' or batiment.nom == "Stade Municipal":
+        messages.error(request, "🏟️ Impossible de démolir le Stade Municipal ! C'est un patrimoine protégé.")
+        return redirect('dashboard')
+    # ----------------------------------
+
     nom_bat = batiment.nom # On garde le nom en mémoire pour le message
     
     # 1. Gestion des employés : On envoie une notif et on vire
@@ -856,7 +877,7 @@ def detruire_batiment(request, id_batiment):
         citoyen.save()
 
     # 2. Destruction
-    batiment.delete() # Maintenant on peut détruire, les notifs resteront (avec batiment=None)
+    batiment.delete() 
     
     messages.success(request, f"Le bâtiment '{nom_bat}' a été démoli avec succès.")
     return redirect('dashboard')

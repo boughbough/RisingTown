@@ -329,22 +329,34 @@
                         <i class="fas fa-search-location"></i> Annuaire
                     </div>
                     <div class="locator-list">
-                        {% for bat in ville.batiments.all %}
-                            {% if bat.type_batiment != 'ROUTE' and bat.type_batiment != 'ROUTE_VIRAGE' %}
-                                <div class="locator-item" onclick="focusOnBuilding({{ bat.x }}, {{ bat.y }}, {{ bat.largeur }}, {{ bat.hauteur }}, 'bat-{{ bat.id }}')">
-                                    <div class="locator-icon">
-                                        {% if bat.type_batiment == 'MAIRIE' %}<i class="fas fa-landmark text-primary"></i>
-                                        {% elif bat.type_batiment == 'HOPITAL' %}<i class="fas fa-hospital text-danger"></i>
-                                        {% else %}<i class="fas fa-building text-muted"></i>{% endif %}
-                                    </div>
-                                    <div class="locator-info">
-                                        <span class="fw-bold">{{ bat.nom|truncatechars:18 }}</span>
-                                        <span class="text-muted small" style="font-size: 0.7rem;">{{ bat.get_type_batiment_display }}</span>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
+    {% for bat in ville.batiments.all %}
+        {% if bat.type_batiment != 'ROUTE' and bat.type_batiment != 'ROUTE_VIRAGE' %}
+            
+            <div class="locator-item" onclick="focusOnBuilding({{ bat.x }}, {{ bat.y }}, {{ bat.largeur }}, {{ bat.hauteur }}, 'bat-{{ bat.id }}')">
+                <div class="locator-icon">
+                    {% if bat.type_batiment == 'MAIRIE' %}
+                        <i class="fas fa-landmark text-primary"></i>
+                    {% elif bat.type_batiment == 'HOPITAL' %}
+                        <i class="fas fa-hospital text-danger"></i>
+                    
+                    {% elif bat.type_batiment == 'STADE' %}
+                        <i class="fas fa-futbol text-success"></i>
+                    
+                    {% elif bat.type_batiment == 'COMMERCE' %}
+                        <i class="fas fa-store text-warning"></i>
+                    {% else %}
+                        <i class="fas fa-building text-muted"></i>
+                    {% endif %}
+                </div>
+                <div class="locator-info">
+                    <span class="fw-bold">{{ bat.nom|truncatechars:18 }}</span>
+                    <span class="text-muted small" style="font-size: 0.7rem;">{{ bat.get_type_batiment_display }}</span>
+                </div>
+            </div>
+
+        {% endif %}
+    {% endfor %}
+</div>
                 </div>
                      
                 <div class="iso-scene {% if moving_batiment %}locked-mode{% endif %}" id="cityScene">
@@ -387,26 +399,87 @@
                                 </div>
 
                             {% else %}
-                                <a href="{% url 'batiment_detail' bat.id %}" 
-                                id="bat-{{ bat.id }}"
-                                class="iso-building building-link" 
-                                data-bat-name="{{ bat.nom }}"
-                                style="
-                                    left: calc(var(--cell-size) * {{ bat.x }}); 
-                                    top: calc(var(--cell-size) * {{ bat.y }});
-                                    width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
-                                    height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px);
-                                    z-index: {{ bat.y|add:bat.hauteur|add:10 }};
-                                ">
-                                    <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
-                                        alt="{{ bat.type_batiment }}"
-                                        class="building-sprite"
-                                        style="{% if bat == moving_batiment %}opacity: 0.6; filter: grayscale(100%) brightness(1.2);{% endif %}"
-                                        onerror="this.src='https://via.placeholder.com/150?text=IMG'">
-                                        
-                                    <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
-                                </a>
-                            {% endif %}
+        
+        {% if bat.type_batiment == 'STADE' %}
+    <a href="https://hamidadsdk.pythonanywhere.com" 
+       target="_blank" 
+       id="bat-{{ bat.id }}"
+       class="iso-building building-link" 
+       /* ON A SUPPRIMÉ L'ATTRIBUT TITLE ICI */
+       style="
+        left: calc(var(--cell-size) * {{ bat.x }}); 
+        top: calc(var(--cell-size) * {{ bat.y }}); 
+        width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
+        height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px); 
+        z-index: {{ bat.y|add:bat.hauteur|add:20 }}; 
+       ">
+        
+        <style>
+            #bat-{{ bat.id }}::after { display: none !important; }
+        </style>
+
+        <img src="{% static 'img/stade.png' %}" 
+             alt="Stade" 
+             class="building-sprite" 
+             style="
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 280%; 
+                height: auto; 
+                transform: translate(-50%, -50%) rotateZ(45deg) rotateX(-60deg) translateY(10%) scale(1.0);
+                image-rendering: -webkit-optimize-contrast;
+                pointer-events: auto;
+                filter: drop-shadow(0 15px 10px rgba(0,0,0,0.3)); 
+             " 
+             onerror="this.src='https://via.placeholder.com/150?text=STADE'">
+        
+        <div class="bat-name text-danger fw-bold" 
+     style="
+        position: absolute; 
+        
+        /* 1. ON LE REMONTE : On part de bien plus haut que la case de base */
+        top: -150px; 
+        left: 50%; 
+        
+        /* 2. ON AJUSTE LA 3D : 
+           translateZ(200px) = Fait flotter le texte très haut 'vers la caméra'
+           pour passer au-dessus du toit du stade.
+        */
+        transform: translate(-50%, 0) rotateZ(45deg) rotateX(-60deg) translateZ(200px); 
+        
+        width: 200px; 
+        text-align: center;
+        
+        /* 3. SÉCURITÉ : On s'assure qu'il est au premier plan */
+        z-index: 5000;
+        pointer-events: none; /* Pour qu'on puisse cliquer sur le stade dessous */
+     ">
+    🏟️ {{ bat.nom }}
+</div>
+    </a>
+{% else %}
+
+            <a href="{% url 'batiment_detail' bat.id %}" 
+               id="bat-{{ bat.id }}"
+               class="iso-building building-link" 
+               data-bat-name="{{ bat.nom }}"
+               style="
+                left: calc(var(--cell-size) * {{ bat.x }}); 
+                top: calc(var(--cell-size) * {{ bat.y }}); 
+                width: calc((var(--cell-size) * {{ bat.largeur }}) - 1px); 
+                height: calc((var(--cell-size) * {{ bat.hauteur }}) - 1px); 
+                z-index: {{ bat.y|add:bat.hauteur|add:10 }};
+               ">
+                <img src="{% static 'img/'|add:bat.type_batiment|lower|add:'.png' %}" 
+                     alt="{{ bat.type_batiment }}" 
+                     class="building-sprite" 
+                     onerror="this.src='https://via.placeholder.com/150?text=IMG'">
+                <div class="bat-name">{{ bat.nom|truncatechars:15 }}</div>
+            </a>
+        {% endif %}
+
+    {% endif %}
 
                         {% endfor %}
                     </div>
