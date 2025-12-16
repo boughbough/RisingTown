@@ -120,7 +120,7 @@ Projet réalisé par l'équipe **RisingTown** (L3 MIAGE) :
 
   * **Mohamed Boughmadi** (Architecte Logiciel & Back-End)
   * **Mohamet Thiam** (Scrum Master & Front-End)
-  * **Djama Faiz** (Gestionnaire BDD & Intégration)
+  * **Faiz Djama** (Gestionnaire BDD & Intégration)
 
 -----
 

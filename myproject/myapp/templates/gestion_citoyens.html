@@ -9,13 +9,13 @@
             <a class="navbar-brand" href="{% url 'dashboard' %}">
                 {% include 'fragments/logo.html' %} Rising<span class="fw-light">Town</span>
             </a>
-            
+
             <div class="d-flex align-items-center gap-3">
                 <div class="d-none d-md-block text-end">
                     <div class="small fw-bold text-dark">{{ user.username }}</div>
                     <div class="small text-muted" style="font-size: 0.75rem;">Maire</div>
                 </div>
-                
+
                 {% include 'fragments/theme_btn.html' %}
 
                 <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3">
@@ -28,7 +28,7 @@
 
 {% block content %}
 <div class="container pt-4 pb-5 mt-5">
-    
+
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 mb-4">
@@ -106,12 +106,24 @@
                             </td>
                             <td>
                                 <div class="small mb-1">
-                                    {% if c.lieu_travail %}
+                                    {% if c.compte.is_superuser %}
+                                        <span class="text-primary fw-bold">
+                                            <i class="fas fa-university me-1"></i> Maire
+                                        </span>
+
+                                    {% elif c.compte.is_adjoint %}
+                                        <span class="text-warning fw-bold">
+                                            <i class="fas fa-star me-1"></i> Adjoint
+                                        </span>
+
+                                    {% elif c.lieu_travail %}
                                         <i class="fas fa-briefcase text-primary me-1" title="Emploi"></i> {{ c.lieu_travail.nom }}
+
                                     {% else %}
                                         <span class="text-danger"><i class="fas fa-couch me-1"></i> Chômeur</span>
                                     {% endif %}
                                 </div>
+
                                 <div class="small">
                                     {% if c.lieu_vie %}
                                         <i class="fas fa-home text-success me-1" title="Logement"></i> {{ c.lieu_vie.nom }}
@@ -123,8 +135,8 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="progress flex-grow-1 me-2" style="height: 6px; width: 80px;">
-                                        <div class="progress-bar {% if c.bonheur > 70 %}bg-success{% elif c.bonheur > 30 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                             role="progressbar" 
+                                        <div class="progress-bar {% if c.bonheur > 70 %}bg-success{% elif c.bonheur > 30 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             role="progressbar"
                                              style="width: {{ c.bonheur }}%">
                                         </div>
                                     </div>
@@ -135,28 +147,28 @@
                             </td>
                             <td class="pe-4 text-end">
                                 <div class="btn-group">
-                                    <a href="{% url 'voir_casier' c.id %}" 
-                                    class="btn btn-sm btn-light border text-dark" 
+                                    <a href="{% url 'voir_casier' c.id %}"
+                                    class="btn btn-sm btn-light border text-dark"
                                     title="Voir le Casier Judiciaire">
                                         <i class="fas fa-folder-open"></i>
                                     </a>
                                     {% if c.compte %}
-                                        <a href="{% url 'promouvoir_adjoint' c.id %}" 
-                                           class="btn btn-sm btn-light border" 
+                                        <a href="{% url 'promouvoir_adjoint' c.id %}"
+                                           class="btn btn-sm btn-light border"
                                            title="{% if c.compte.is_adjoint %}Rétrograder{% else %}Promouvoir Adjoint{% endif %}">
                                             <i class="fas fa-star {% if c.compte.is_adjoint %}text-warning{% else %}text-muted opacity-50{% endif %}"></i>
                                         </a>
                                     {% endif %}
-                                    
+
                                     <a href="{% url 'modifier_citoyen_admin' c.id %}" class="btn btn-sm btn-light border text-primary" title="Modifier">
                                         <i class="fas fa-pen"></i>
                                     </a>
-                                    
+
                                     {% if not c.compte.is_superuser %}
                                         <form action="{% url 'bannir_citoyen' c.id %}" method="post" class="d-inline">
                                             {% csrf_token %}
-                                            <button type="submit" 
-                                                    class="btn btn-sm btn-light border text-danger" 
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-light border text-danger"
                                                     title="Bannir et Destituer (Poste vacant)"
                                                     onclick="return confirm('ATTENTION : Bannir {{ c.prenom }} ?\n\n- Son compte sera désactivé.\n- Il sera viré de son poste de directeur.\n- Il ne pourra plus se connecter.');">
                                                 <i class="fas fa-gavel"></i> </button>

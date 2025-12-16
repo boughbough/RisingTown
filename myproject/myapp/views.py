@@ -613,52 +613,71 @@ def batiment_detail(request, id_batiment):
 
 @login_required
 def proposer_poste(request, id_batiment):
-    """Gère les dépôts de plainte avec accusation précise"""
+    """Gère les offres d'emploi (Employeur) ET les plaintes (Police)"""
     batiment = get_object_or_404(Batiment, id=id_batiment)
     
     if request.method == 'POST':
         type_demande = request.POST.get('type_demande', 'OFFRE')
         message = request.POST.get('message', '')
         
-        # --- CAS PLAINTE ---
+        # =========================================================
+        # CAS 1 : DÉPÔT DE PLAINTE (Police)
+        # =========================================================
         if type_demande == 'PLAINTE':
             try:
-                citoyen_cible = request.user.profil_citoyen
+                citoyen_cible = request.user.profil_citoyen # Le plaignant
                 
-                # 1. RÉCUPÉRATION DE L'ACCUSÉ (Nouveau)
                 accuse_id = request.POST.get('accuse_id')
                 sanction_souhaitee = request.POST.get('sanction_souhaitee', '')
                 
-                # On enrichit le message avec les infos techniques pour la police
                 info_accuse = ""
                 if accuse_id:
                     try:
                         accuse = Citoyen.objects.get(id=accuse_id)
-                        # On met un tag spécial [ID:12] pour pouvoir retrouver le citoyen automatiquement plus tard si besoin
                         info_accuse = f"\n[ACCUSÉ: {accuse.prenom} {accuse.nom} (ID:{accuse.id})]"
                     except:
                         pass
                 
                 full_message = f"{message}{info_accuse}\n[DEMANDE: {sanction_souhaitee}]"
 
+                Candidature.objects.create(
+                    batiment=batiment,
+                    citoyen=citoyen_cible,
+                    message=full_message,
+                    statut='PLAINTE',
+                    initiateur_est_citoyen=True # C'est le citoyen qui se plaint
+                )
+                messages.success(request, "Plainte enregistrée.")
             except:
-                messages.error(request, "Erreur de profil.")
-                return redirect('batiment_detail', id_batiment=batiment.id)
-            
-            # Création de la plainte
-            Candidature.objects.create(
-                batiment=batiment,
-                citoyen=citoyen_cible,
-                message=full_message, # Le message contient maintenant le nom du coupable
-                statut='PLAINTE',
-                initiateur_est_citoyen=True
-            )
-            messages.success(request, "Plainte enregistrée.")
+                messages.error(request, "Erreur lors du dépôt de plainte.")
 
-        # --- CAS OFFRE EMPLOI (Reste inchangé) ---
+        # =========================================================
+        # CAS 2 : OFFRE D'EMPLOI (Employeur) -> C'EST ÇA QUI MANQUAIT
+        # =========================================================
         else:
-            # ... (Garde ton code existant pour l'embauche ici) ...
-            pass # (Je ne le remets pas pour raccourcir, mais ne l'efface pas !)
+            citoyen_id = request.POST.get('citoyen_id')
+            if citoyen_id:
+                try:
+                    candidat = Citoyen.objects.get(id=citoyen_id)
+                    
+                    # Vérification anti-doublon
+                    if not Candidature.objects.filter(batiment=batiment, citoyen=candidat, statut='EN_ATTENTE').exists():
+                        
+                        Candidature.objects.create(
+                            batiment=batiment,
+                            citoyen=candidat,
+                            message=message,
+                            statut='EN_ATTENTE',
+                            # --- POINT CRUCIAL POUR L'AFFICHAGE ---
+                            initiateur_est_citoyen=False  # FALSE = C'est une offre de l'entreprise
+                            # --------------------------------------
+                        )
+                        messages.success(request, f"Offre envoyée à {candidat.prenom} {candidat.nom}.")
+                    else:
+                        messages.warning(request, "Une offre est déjà en cours pour ce citoyen.")
+                        
+                except Citoyen.DoesNotExist:
+                    messages.error(request, "Citoyen introuvable.")
 
     return redirect('batiment_detail', id_batiment=batiment.id)
 
@@ -1350,7 +1369,7 @@ def verser_salaires(request):
     ville = Ville.objects.first()
     mairie = Batiment.objects.filter(ville=ville, type_batiment='MAIRIE').first()
     
-    # On vérifie UNE SEULE FOIS si un hôpital est actif (pour optimiser)
+    # Optimisation : On vérifie l'hôpital une seule fois
     hopital_actif = Batiment.objects.filter(ville=ville, type_batiment='HOPITAL').exists()
     
     # --- 1. SYSTÈME DE LOGS ---
@@ -1362,7 +1381,7 @@ def verser_salaires(request):
         bilans_citoyens[citoyen.id]['lignes'].append(texte)
 
     # =================================================
-    # 2. SALAIRES
+    # 2. SALAIRES (CORRIGÉ : AJOUT DE SAVE)
     # =================================================
     travailleurs = Citoyen.objects.filter(ville=ville, lieu_travail__isnull=False)
     total_salaires = 0
@@ -1382,11 +1401,13 @@ def verser_salaires(request):
         if ville.budget >= salaire_net:
             ville.budget -= salaire_net
             c.argent += salaire_net
+            c.save() # <--- AJOUT IMPORTANT : ON SAUVEGARDE L'ARGENT
+            
             total_salaires += salaire_net
             ajouter_ligne(c, f"💰 Salaire ({details_grade}) : +{salaire_net} €")
     
     # =================================================
-    # 3. ALLOCATION CHÔMAGE (RSA)
+    # 3. ALLOCATION CHÔMAGE (CORRIGÉ : AJOUT DE SAVE)
     # =================================================
     chomeurs = Citoyen.objects.filter(
         ville=ville, 
@@ -1401,11 +1422,13 @@ def verser_salaires(request):
         if ville.budget >= alloc_rsa:
             ville.budget -= alloc_rsa
             c.argent += alloc_rsa
+            c.save() # <--- AJOUT IMPORTANT
+            
             total_rsa += alloc_rsa
             ajouter_ligne(c, f"🛡️ Aide Sociale (RSA) : +{alloc_rsa} €")
 
     # =================================================
-    # 4. COLLECTE DES LOYERS
+    # 4. COLLECTE DES LOYERS (CORRIGÉ : AJOUT DE SAVE)
     # =================================================
     locataires = Citoyen.objects.filter(ville=ville, lieu_vie__isnull=False)
     total_loyers = 0
@@ -1416,8 +1439,10 @@ def verser_salaires(request):
         
         if l.argent >= loyer:
             l.argent -= loyer
-            total_loyers += loyer
             l.prochain_loyer = now + timedelta(days=1)
+            l.save() # <--- AJOUT IMPORTANT (On sauvegarde le paiement)
+            
+            total_loyers += loyer
             ajouter_ligne(l, f"🏠 Loyer ({l.lieu_vie.nom}) : -{loyer} €")
         else:
             nom_logement = l.lieu_vie.nom
@@ -1425,6 +1450,7 @@ def verser_salaires(request):
             l.lieu_vie = None
             l.prochain_loyer = None
             l.bonheur -= 20 
+            l.save() # <--- AJOUT IMPORTANT (On sauvegarde l'expulsion)
             
             Candidature.objects.create(
                 citoyen=l,
@@ -1436,7 +1462,7 @@ def verser_salaires(request):
             ajouter_ligne(l, f"⚠️ EXPULSÉ de {nom_logement} (Impayé)")
 
     # =================================================
-    # 5. COLLECTE PARKING
+    # 5. COLLECTE PARKING (CORRIGÉ : AJOUT DE SAVE)
     # =================================================
     total_parking = 0
     parking = Batiment.objects.filter(ville=ville, type_batiment='PARKING').first()
@@ -1448,54 +1474,54 @@ def verser_salaires(request):
         for auto in automobilistes:
             if auto.argent >= tarif:
                 auto.argent -= tarif
+                auto.save() # <--- AJOUT IMPORTANT
+                
                 total_parking += tarif
                 ajouter_ligne(auto, f"🅿️ Stationnement : -{tarif} €")
             else:
                 auto.bonheur -= 2
+                auto.save() # <--- AJOUT IMPORTANT
                 ajouter_ligne(auto, f"⚠️ Impayé Parking (Amende morale)")
 
+    # Mise à jour du budget global de la ville
     ville.budget += total_loyers + total_parking
     ville.save()
 
     # =================================================
     # 6. TEMPS, SANTÉ & BONHEUR (Cycle de vie)
     # =================================================
+    # Attention : On recharge les citoyens depuis la base pour être sûr d'avoir les montants à jour
+    # même si on a fait des saves au-dessus (bonne pratique)
     all_citoyens = Citoyen.objects.filter(ville=ville)
     
     for c in all_citoyens:
         
-        # --- A. SANTÉ DYNAMIQUE (Nouveau !) ---
-        variation_sante = -5 # Fatigue naturelle de base
-        
-        # S'il y a un hôpital en ville, on compense la fatigue (+6)
-        # Résultat net : +1 (légère guérison)
-        if hopital_actif:
-            variation_sante += 6
+        # --- A. SANTÉ DYNAMIQUE ---
+        variation_sante = -5 
+        if hopital_actif: variation_sante += 6
+        if c.lieu_vie: variation_sante += 2
+        else: variation_sante -= 2
             
-        # Si on dort dans un lit, on récupère mieux (+2)
-        if c.lieu_vie:
-            variation_sante += 2
-        else:
-            # Si on dort dehors (SDF), on tombe malade (-2)
-            variation_sante -= 2
-            
-        # Accident aléatoire (5% de chance) -> Gros coup dur
         if random.randint(1, 20) == 1:
             variation_sante -= 10
             ajouter_ligne(c, "📉 Accident / Maladie : -10 Santé")
             
         c.sante += variation_sante
+        # Bornage 0-100 (au cas où le modèle ne le gère pas parfaitement)
+        if c.sante > 100: c.sante = 100
+        if c.sante < 0: c.sante = 0
 
-        # --- B. BONHEUR PASSIF (Stabilité) ---
+        # --- B. BONHEUR PASSIF ---
         gain_bonheur = 0
         if c.lieu_travail: gain_bonheur += 1
         if c.lieu_vie: gain_bonheur += 2
         if not c.lieu_vie and not c.lieu_travail: gain_bonheur -= 2
             
         c.bonheur += gain_bonheur
+        if c.bonheur > 100: c.bonheur = 100
+        if c.bonheur < 0: c.bonheur = 0
         
-        # C. SAUVEGARDE (Le modèle gère le blocage 0-100)
-        c.save()
+        c.save() # Sauvegarde Santé/Bonheur
 
     # =================================================
     # 7. ENVOI DES NOTIFICATIONS
@@ -1505,7 +1531,9 @@ def verser_salaires(request):
         lignes = data['lignes']
         
         if lignes: 
+            # On rafraîchit l'objet pour avoir le montant exact en base
             citoyen.refresh_from_db()
+            
             message_final = "📅 BILAN QUOTIDIEN\n" + "\n".join(lignes)
             message_final += f"\n\nNouveau Solde : {citoyen.argent} €"
             
