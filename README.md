@@ -118,9 +118,11 @@ Ouvrez votre navigateur web et accédez à l'adresse suivante :
 
 Projet réalisé par l'équipe **RisingTown** (L3 MIAGE) :
 
-  * **Mohamed Boughmadi** (Architecte Logiciel & Back-End)
-  * **Mohamet Thiam** (Scrum Master & Front-End)
-  * **Faiz Djama** (Gestionnaire BDD & Intégration)
+   * **Mohamed Boughmadi** (Architecte Logiciel & Back-End)
+   * **Mohamet Thiam** (Scrum Master & Front-End)
+   * **Faiz Djama** (Gestionnaire BDD & Intégration)
+   * **Joël Kpinso-Folly** (DevOps & Assurance Qualité)
+   * **Hamid Adenle** (UI/UX Designer & Équilibrage Économique)
 
 -----
 
