@@ -1,131 +1,68 @@
-# 🏙️ RisingTown - Simulation de Smart City
+# 🏙️ RisingTown : Simulation de Smart City
 
-**RisingTown** est une application web de simulation urbaine gamifiée, développée dans le cadre de la Licence 3 MIAGE à l'Université Paris Nanterre.
+###
 
-Ce projet permet à plusieurs utilisateurs d'interagir en temps réel au sein d'une ville virtuelle persistante, en incarnant des rôles variés (Maire, Adjoint, Directeur, Citoyen) et en gérant des aspects économiques, sociaux et urbanistiques.
+<div align="left">
+  <h2>🔹 Stack Technique</h2>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" height="40" alt="python logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/django/django-plain.svg" height="40" alt="django logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" height="40" alt="sqlite logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" height="40" alt="javascript logo"  />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" height="40" alt="html5 logo"  />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" height="40" alt="css3 logo"  />
+  <img width="12" />
+</div>
 
----
+###
 
-## 🚀 Fonctionnalités Clés
+## 🔹 Présentation du Projet
 
-* **Gestion Urbaine :** Carte isométrique interactive (construction, déplacement, rotation de bâtiments).
-* **Système de Rôles :**
-    * 🏛️ **Maire :** Gestion du budget, urbanisme, fiscalité et justice.
-    * 🛡️ **Adjoint :** Maintenance des bâtiments (réparations), communication officielle.
-    * 👔 **Directeur :** Gestion d'entreprise (recrutement, licenciement).
-    * 🙋 **Citoyen :** Recherche d'emploi, logement, gestion de budget personnel.
-* **Économie Temps Réel :** Salaires, impôts progressifs, loyers et consommation.
-* **Mécaniques de Vie :** Jauges de Santé (fatigue/hôpital) et de Bonheur (fêtes/émeutes).
-* **Social & Justice :** Chat en direct (téléphone), système de plaintes, casier judiciaire et prison.
+**RisingTown** est une application web de simulation urbaine gamifiée. Ce projet permet à plusieurs utilisateurs d'interagir en temps réel au sein d'une ville virtuelle persistante.
 
----
+* **Contexte** : Développée dans le cadre de la Licence 3 MIAGE à l'Université Paris Nanterre (Décembre 2025).
+* **Objectifs** : Gérer des aspects économiques, sociaux et urbanistiques en incarnant différents rôles dans une société simulée.
+* **Fonctionnalités Clés** : 
+    * **Gestion Urbaine** : Carte isométrique interactive (construction, déplacement, rotation de bâtiments).
+    * **Système de Rôles** : Maire (budget, urbanisme), Adjoint (maintenance), Directeur (entreprises) et Citoyen (emploi, logement).
+    * **Économie & Mécaniques** : Économie en temps réel (salaires, impôts, loyers), jauges de vie (Santé/Bonheur).
+    * **Social & Justice** : Chat en direct (téléphone), système de plaintes, casier judiciaire et prison.
 
-## 🛠️ Stack Technique
+###
 
-* **Langage :** Python 3.9+
-* **Framework Backend :** Django 5.2.8
-* **Base de Données :** SQLite3
-* **Frontend :** HTML5, CSS3, JavaScript (AJAX/Fetch API)
-* **Hébergement :** PythonAnywhere
+## 🔹 Installation & Déploiement
 
----
+1.  **Cloner le projet** : Récupérer le code via `git clone https://github.com/boughbough/RisingTown.git` puis `cd RisingTown`.
+2.  **Environnement virtuel** : Isoler les dépendances en créant un venv (`python -m venv venv`) puis l'activer (`venv\Scripts\activate` sur Windows ou `source venv/bin/activate` sur Mac/Linux).
+3.  **Dépendances** : Installer les paquets requis avec la commande `pip install -r requirements.txt`.
+4.  **Base de données** : Initialiser la structure SQLite fournie avec `python manage.py migrate`.
+5.  **Administration** : Créer le compte Maire (super-utilisateur) via `python manage.py createsuperuser`.
+6.  **Lancement** : Démarrer le serveur local avec `python manage.py runserver` et accéder à l'interface sur `127.0.0.1:8000`.
 
-## 💻 Guide d'Installation (Local)
+###
 
-Suivez ces étapes pour lancer le projet sur votre machine.
+## 🔹 Structure du Projet
 
-### 1. Cloner le projet
-Récupérez le code source depuis le dépôt Git :
+* **myapp/** : Cœur logique de l'application (Views, Models, Forms, Migrations).
+* **myproject/** : Configuration globale (Settings, URLs, WSGI).
+* **templates/** : Interfaces HTML (Dashboard, Carte, Login, Admin).
+* **static/** : Fichiers statiques (CSS, Javascript, Images/Sprites).
+* **db.sqlite3 & manage.py** : Base de données locale et utilitaire de gestion du framework Django.
 
-```bash
-git clone [https://github.com/boughbough/RisingTown.git](https://github.com/boughbough/RisingTown.git)
-cd RisingTown
-````
+###
 
-### 2\. Créer l'environnement virtuel
+<br clear="both">
 
-Il est nécessaire d'isoler les dépendances du projet.
+<p align="center">
+  <b>Auteurs : Mohamed Boughmadi, Mohamet Thiam, Faiz Djama, Joël Kpinso-Folly & Hamid Adenle (Projet L3 MIAGE 2025)</b>
+</p>
 
-**Sous Windows :**
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-**Sous Mac/Linux :**
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-*(Une fois activé, vous devriez voir `(venv)` au début de votre ligne de commande).*
-
-### 3\. Installer les dépendances
-
-Installez Django et les bibliothèques requises via `pip` :
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4\. Initialiser la Base de Données
-
-Le projet est fourni avec une base de données pré-configurée, mais il est recommandé d'appliquer les migrations pour s'assurer de la cohérence du schéma :
-
-```bash
-python manage.py migrate
-```
-
-### 5\. Créer un Super-Utilisateur (Le Maire)
-
-Pour accéder à l'interface d'administration et posséder les droits de Maire dans la simulation :
-
-```bash
-python manage.py createsuperuser
-```
-
-*(Suivez les instructions pour définir un nom d'utilisateur et un mot de passe).*
-
------
-
-## ▶️ Lancement du Serveur
-
-Une fois l'installation terminée, lancez le serveur de développement :
-
-```bash
-python manage.py runserver
-```
-
-Ouvrez votre navigateur web et accédez à l'adresse suivante :
-## **127.0.0.1:8000**
-
------
-
-## 📂 Structure du Projet
-
-  * `myapp/` : Cœur logique de l'application (Views, Models, Forms, Migrations).
-  * `myproject/` : Configuration globale (Settings, URLs, WSGI).
-  * `templates/` : Interfaces HTML (Dashboard, Carte, Login, Admin).
-  * `static/` : Fichiers statiques (CSS, Javascript, Images/Sprites).
-  * `db.sqlite3` : Base de données locale.
-  * `manage.py` : Utilitaire de gestion Django.
-
------
-
-## 👥 Auteurs
-
-Projet réalisé par l'équipe **RisingTown** (L3 MIAGE) :
-
-   * **Mohamed Boughmadi** (Architecte Logiciel & Back-End)
-   * **Mohamet Thiam** (Scrum Master & Front-End)
-   * **Faiz Djama** (Gestionnaire BDD & Intégration)
-   * **Joël Kpinso-Folly** (DevOps & Assurance Qualité)
-   * **Hamid Adenle** (UI/UX Designer & Équilibrage Économique)
-
------
-
-*Décembre 2025 - Université Paris Nanterre*
-
-```
+<div align="center">
+  <h3>💬 Questions ? Contactez-nous ici :</h3>
+  <a href="https://mail.google.com/mail/?view=cm&fs=1&to=mohamedboughmadi93300@gmail.com" target="_blank"><img src="https://img.shields.io/static/v1?message=Gmail&logo=gmail&label=&color=D14836&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="gmail logo" /></a>
+  <a href="https://github.com/boughbough" target="_blank"><img src="https://img.shields.io/static/v1?message=GitHub&logo=github&label=&color=181717&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="github logo" /></a>
+</div>
