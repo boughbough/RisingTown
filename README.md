@@ -99,7 +99,7 @@ python manage.py runserver
 ```
 
 Ouvrez votre navigateur web et accédez à l'adresse suivante :
-# **127.0.0.1:8000**
+## **127.0.0.1:8000**
 
 -----
 
