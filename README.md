@@ -36,13 +36,25 @@
 
 ###
 
-## 📸 Aperçu de l'Interface Maire
+## 📸 Aperçu Exclusif : L'Interface du Maire
 
-*(Pour des raisons de sécurité, le rôle de Maire disposant des pleins pouvoirs n'est pas accessible sur la démo en ligne. Voici un aperçu de ses capacités exclusives :)*
+*(Pour des raisons de sécurité, le rôle de Maire disposant des pleins pouvoirs n'est pas accessible sur la démo en ligne. Voici une démonstration visuelle de ses capacités uniques : )*
 
 <div align="center">
-  <img src="lien_vers_ta_capture_ecran_maire.png" width="800" alt="Interface du Maire" />
-  <p><i>Interface de construction isométrique et gestion du budget municipal.</i></p>
+  <img src="screenshots/maire_gestion.png" width="850" alt="Gestion avancée du Maire" />
+  <p><i>1. Interface de gestion avancée : Suivi du budget municipal, de la population et de la fiscalité.</i></p>
+  <br>
+
+  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+    <div style="text-align: center; width: 400px;">
+      <img src="screenshots/maire_carte.png" width="100%" alt="Vue carte du Maire" />
+      <p><i>2. Vue d'ensemble de la ville avec les outils de construction et de gestion des zones exclusifs au Maire. </i></p>
+    </div>
+    <div style="text-align: center; width: 400px;">
+      <img src="screenshots/maire_dashboard.png" width="100%" alt="Tableau de bord du Maire" />
+      <p><i>3. Tableau de bord personnel : Suivi des ressources personnelles et services en tant que citoyen (loyer, banque, parking...) .</i></p>
+    </div>
+  </div>
 </div>
 
 ## 🔹 Installation & Déploiement
