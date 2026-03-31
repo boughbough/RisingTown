@@ -60,7 +60,7 @@
 <br clear="both">
 
 <p align="center">
-  <b>Auteurs : Mohamed Boughmadi, Mohamet Thiam, Faiz Djama, Joël Kpinso-Folly & Hamid Adenle (Projet L3 MIAGE 2025)</b>
+  <b>Auteurs : Mohamed Boughmadi, Mohamet Thiam & Faiz Djama (Projet L3 MIAGE 2025)</b>
 </p>
 
 <div align="center">
